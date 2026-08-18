@@ -1,0 +1,2741 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KASIR TOKO — Kasir & Saldo Anggota</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#2B4A3B">
+<meta name="description" content="Aplikasi kasir dan saldo anggota untuk toko, bekerja sepenuhnya offline.">
+<link rel="icon" href="icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KASIR TOKO">
+<style>
+  :root{
+    --bg:#F6F1E4;
+    --surface:#FFFFFF;
+    --primary:#2B4A3B;
+    --primary-dark:#1B2F26;
+    --accent:#B8862F;
+    --accent-light:#EFE1BC;
+    --text:#22281F;
+    --muted:#6E6858;
+    --border:#E2D8BE;
+    --danger:#A6402F;
+    --danger-light:#F3DFD9;
+    --success:#3E6B4F;
+    --success-light:#DCE8DF;
+    --font-head:Georgia,'Iowan Old Style','Palatino Linotype',serif;
+    --font-body:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:var(--font-body);background:var(--bg);color:var(--text);}
+  ::selection{background:var(--accent-light);}
+  button{font-family:inherit;cursor:pointer;}
+  input,select{font-family:inherit;}
+  .app{display:flex;min-height:100vh;}
+
+  /* Sidebar */
+  .sidebar{
+    width:220px;flex-shrink:0;background:var(--primary);
+    background-image:linear-gradient(180deg,var(--primary) 0%,var(--primary-dark) 100%);
+    color:#EFE8D6;display:flex;flex-direction:column;
+    position:sticky;top:0;height:100vh;
+  }
+  .sidebar-brand{padding:24px 20px 16px;border-bottom:1px solid rgba(239,232,214,.15);}
+  .sidebar-brand .title{font-family:var(--font-head);font-size:20px;letter-spacing:.5px;}
+  .sidebar-brand .sub{font-size:11px;color:#C9BE9E;margin-top:2px;letter-spacing:.5px;text-transform:uppercase;}
+  .nav{padding:12px;flex:1;}
+  .nav button{
+    display:flex;align-items:center;gap:10px;width:100%;background:none;border:none;
+    color:#DCD4BA;padding:11px 12px;border-radius:8px;font-size:14px;text-align:left;margin-bottom:2px;
+    transition:background .15s;
+  }
+  .nav button .ic{width:18px;text-align:center;opacity:.85;}
+  .nav button:hover{background:rgba(239,232,214,.08);}
+  .nav button.active{background:var(--accent);color:#2B2410;font-weight:600;}
+  .sidebar-foot{padding:14px 16px;border-top:1px solid rgba(239,232,214,.15);font-size:11px;color:#A79E80;}
+
+  /* Main */
+  .main{flex:1;min-width:0;padding:28px 32px;max-width:1180px;}
+  .page-title{font-family:var(--font-head);font-size:26px;margin:0 0 4px;}
+  .page-sub{color:var(--muted);font-size:13.5px;margin:0 0 22px;}
+  .row-between{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:18px;}
+
+  /* Cards */
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;}
+  .card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+  .card .value{font-family:var(--font-head);font-size:24px;margin-top:6px;color:var(--primary-dark);font-variant-numeric:tabular-nums;}
+  .card.accent{background:var(--primary);color:#EFE8D6;border-color:var(--primary);}
+  .card.accent .label{color:#C9BE9E;}
+  .card.accent .value{color:var(--accent-light);}
+
+  .panel{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:20px;}
+  .panel-head{padding:14px 18px;border-bottom:1px solid var(--border);font-weight:600;display:flex;justify-content:space-between;align-items:center;}
+  .panel-body{padding:16px 18px;}
+  .empty{color:var(--muted);font-size:13.5px;padding:24px;text-align:center;}
+
+  /* Buttons */
+  .btn{border:1px solid var(--border);background:var(--surface);padding:8px 14px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--text);}
+  .btn:hover{background:var(--bg);}
+  .btn-primary{background:var(--primary);border-color:var(--primary);color:#F3EFDF;}
+  .btn-primary:hover{background:var(--primary-dark);}
+  .btn-accent{background:var(--accent);border-color:var(--accent);color:#2B2410;font-weight:600;}
+  .btn-accent:hover{filter:brightness(1.05);}
+  .btn-danger{background:var(--danger-light);border-color:#E3BDB2;color:var(--danger);}
+  .btn-sm{padding:5px 10px;font-size:12.5px;border-radius:6px;}
+  .btn-icon{padding:6px 9px;}
+  .btn:disabled{opacity:.5;cursor:not-allowed;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);border-bottom:1px solid var(--border);padding:9px 10px;}
+  tbody td{padding:11px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover{background:#FBF8EF;}
+  .num{font-variant-numeric:tabular-nums;text-align:right;}
+  .tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+  .tag.saldo{background:var(--success-light);color:var(--success);}
+  .tag.tunai{background:var(--accent-light);color:#7A5A17;}
+  .tag.low{background:var(--danger-light);color:var(--danger);}
+  .tag.topup{background:#E3E9F5;color:#3B5488;}
+  .tag.tarik{background:var(--danger-light);color:var(--danger);}
+  .tag.batal{background:var(--border);color:var(--muted);}
+  .tag.hutang{background:var(--danger-light);color:var(--danger);}
+  .tag.lunas{background:var(--success-light);color:var(--success);}
+
+  .search{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13.5px;width:220px;background:var(--surface);}
+  .search:focus,input:focus,select:focus{outline:2px solid var(--accent);outline-offset:1px;}
+
+  /* Modal */
+  .overlay{position:fixed;inset:0;background:rgba(27,47,38,.45);display:none;align-items:center;justify-content:center;z-index:50;padding:20px;}
+  .overlay.show{display:flex;}
+  .scan-overlay{position:fixed;inset:0;background:rgba(27,47,38,.6);display:none;align-items:center;justify-content:center;z-index:70;padding:20px;}
+  .scan-overlay.show{display:flex;}
+  .modal{background:var(--surface);border-radius:14px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 50px rgba(0,0,0,.25);}
+  .modal-head{padding:18px 20px 8px;font-family:var(--font-head);font-size:19px;}
+  .modal-body{padding:8px 20px 20px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;font-weight:600;}
+  .field input,.field select{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--bg);}
+  .password-wrap{position:relative;}
+  .password-wrap input{padding-right:38px;}
+  .toggle-eye{position:absolute;top:50%;right:3px;transform:translateY(-50%);background:none;border:none;padding:6px 8px;font-size:15px;line-height:1;color:var(--muted);}
+  .toggle-eye:hover{color:var(--text);}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:6px;}
+  .kategori-chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip-kategori{padding:7px 13px;border-radius:20px;border:1px solid var(--border);background:var(--bg);font-size:13px;cursor:pointer;color:var(--text);transition:background .15s,border-color .15s,color .15s;}
+  .chip-kategori.active{background:var(--primary-dark);border-color:var(--primary-dark);color:#F3EFDF;}
+  .chart-legend{display:flex;gap:16px;margin-bottom:10px;font-size:12.5px;color:var(--muted);}
+  .chart-legend i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:middle;}
+  .chart-scroll{overflow-x:auto;}
+  #grafikLaporan{display:block;}
+  #grafikProdukLaporan{display:block;}
+
+  /* Kasir layout */
+  .kasir-wrap{display:grid;grid-template-columns:1fr 340px;gap:18px;align-items:start;}
+  .produk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+  .produk-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:12px;text-align:left;transition:border-color .15s;}
+  .produk-card:hover{border-color:var(--accent);}
+  .produk-card .nm{font-weight:600;font-size:13.5px;line-height:1.3;}
+  .produk-card .hg{color:var(--primary-dark);font-weight:700;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .produk-card .st{color:var(--muted);font-size:11.5px;margin-top:2px;}
+  .produk-card:disabled{opacity:.4;}
+
+  .cart{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;position:sticky;top:20px;}
+  .cart-item{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;}
+  .cart-item .nm{flex:1;}
+  .qty-ctrl{display:flex;align-items:center;gap:6px;}
+  .qty-ctrl button{width:22px;height:22px;border-radius:5px;border:1px solid var(--border);background:var(--bg);line-height:1;padding:0;flex:none;}
+  .qty-ctrl input{width:38px;height:22px;border-radius:5px;border:1px solid var(--border);background:#fff;text-align:center;padding:0;font-size:13px;-moz-appearance:textfield;}
+  .qty-ctrl input::-webkit-outer-spin-button,.qty-ctrl input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+  .cart-total{display:flex;justify-content:space-between;font-family:var(--font-head);font-size:19px;margin:14px 0;padding-top:12px;border-top:2px solid var(--primary-dark);}
+  .nav-badge{background:var(--danger);color:#fff;border-radius:999px;font-size:10.5px;font-weight:700;padding:1px 6.5px;margin-left:4px;vertical-align:2px;}
+
+  /* Struk */
+  .struk{font-family:'Courier New',monospace;font-size:12.5px;background:var(--surface);border:1px dashed var(--border);border-radius:8px;padding:16px;}
+  @media print{
+    body *{visibility:hidden;}
+    #strukPrint, #strukPrint *{visibility:visible;}
+    #strukPrint{position:absolute;top:0;left:0;width:100%;border:none;padding:0;}
+  }
+  .struk .center{text-align:center;}
+  .struk hr{border:none;border-top:1px dashed var(--border);margin:8px 0;}
+  .struk-row{display:flex;justify-content:space-between;}
+
+  .barcode-preview{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;min-height:40px;display:flex;align-items:center;justify-content:center;}
+  .barcode-preview svg{max-width:100%;height:auto;}
+  .barcode-print{text-align:center;padding:6px 0 10px;}
+  .input-row{display:flex;gap:6px;}
+  .input-row input{flex:1;min-width:0;}
+  .input-row .btn{flex-shrink:0;white-space:nowrap;}
+  .mono{font-family:'Courier New',monospace;font-size:11.5px;color:var(--muted);}
+  .scan-wrap{position:relative;border-radius:10px;overflow:hidden;background:#000;line-height:0;}
+  #scanVideo{width:100%;display:block;background:#000;}
+  .scan-guide{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:78%;height:32%;
+    border:2px solid var(--accent);border-radius:10px;box-shadow:0 0 0 2000px rgba(0,0,0,.55);pointer-events:none;}
+  .scan-guide::before,.scan-guide::after{content:'';position:absolute;width:22px;height:22px;border-color:#fff;}
+  .scan-guide .laser{position:absolute;left:5%;right:5%;height:2px;top:8%;background:linear-gradient(90deg,transparent,var(--accent) 15%,var(--accent) 85%,transparent);box-shadow:0 0 8px 1px var(--accent);animation:scanLaser 1.7s ease-in-out infinite;}
+  @keyframes scanLaser{0%{top:8%;}50%{top:88%;}100%{top:8%;}}
+  .scan-hint-row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-top:10px;}
+  .scan-hint-row .hint{margin:0;flex:1;}
+  .panel-body{overflow-x:auto;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--primary-dark);color:#F3EFDF;padding:11px 20px;border-radius:30px;font-size:13.5px;box-shadow:0 8px 24px rgba(0,0,0,.25);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s, transform .25s;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+  .badge-count{background:var(--danger);color:#fff;font-size:10.5px;padding:1px 6px;border-radius:10px;margin-left:auto;}
+  .rank-badge{display:inline-flex;align-items:center;justify-content:center;width:23px;height:23px;border-radius:50%;background:var(--bg);border:1px solid var(--border);font-size:11.5px;font-weight:700;color:var(--muted);}
+  .rank-badge.top1{background:#F5D67B;border-color:#D9B84E;color:#5C4413;}
+  .rank-badge.top2{background:#DCE1E8;border-color:#B9C1CC;color:#3C4450;}
+  .rank-badge.top3{background:#E8C7A9;border-color:#D2A67C;color:#5C3B1E;}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;}
+  .anggota-select-search{position:relative;}
+  .dropdown-list{position:absolute;top:100%;left:0;right:0;background:var(--surface);border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:10;box-shadow:0 6px 16px rgba(0,0,0,.1);display:none;}
+  .dropdown-list.show{display:block;}
+  .dropdown-list div{padding:8px 12px;font-size:13.5px;border-bottom:1px solid var(--border);}
+  .dropdown-list div:hover{background:var(--bg);}
+  .dropdown-list div:last-child{border-bottom:none;}
+
+  footer.hint{font-size:11.5px;color:var(--muted);margin-top:6px;}
+  @media(max-width:820px){
+    .app{flex-direction:column;}
+    .sidebar{width:100%;height:auto;position:relative;flex-direction:row;overflow-x:auto;}
+    .sidebar-brand{display:none;}
+    .nav{display:flex;padding:8px;}
+    .nav button{white-space:nowrap;width:auto;}
+    .sidebar-foot{display:none;}
+    .main{padding:18px;}
+    .kasir-wrap{grid-template-columns:1fr;}
+    .cart{position:static;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="title">🏪 KASIR TOKO</div>
+      <div class="sub">Kasir &amp; Saldo Anggota</div>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-page="dashboard" class="active"><span class="ic">▤</span> Dashboard</button>
+      <button data-page="kasir"><span class="ic">🧾</span> Kasir</button>
+      <button data-page="anggota"><span class="ic">👥</span> Anggota</button>
+      <button data-page="produk"><span class="ic">📦</span> Produk <span id="badgeStokMenipis" class="nav-badge" style="display:none;"></span></button>
+      <button data-page="riwayat"><span class="ic">🕘</span> Riwayat</button>
+      <button data-page="kas"><span class="ic">💰</span> Kas</button>
+      <button data-page="laporan"><span class="ic">📊</span> Laporan</button>
+      <button data-page="pengaturan"><span class="ic">⚙</span> Pengaturan</button>
+    </nav>
+    <div class="sidebar-foot">Tersimpan lokal di perangkat ini.<br>Bekerja tanpa koneksi internet.</div>
+  </aside>
+
+  <main class="main" id="main"></main>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="scan-overlay" id="scanOverlay"><div class="modal" id="scanModal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ STORAGE LAYER ============ */
+const DB_KEY = 'warungPondokData_v1';
+function loadDB(){
+  try{
+    const raw = localStorage.getItem(DB_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.error('Gagal membaca data', e); }
+  return { anggota:[], produk:[], transaksi:[], riwayatBarcode:{}, kasAwal:0, modalAwal:0, kasMutasi:[] };
+}
+function saveDB(){
+  localStorage.setItem(DB_KEY, JSON.stringify(state));
+  perbaruiBadgeStokMenipis();
+}
+function perbaruiBadgeStokMenipis(){
+  const badge = document.getElementById('badgeStokMenipis');
+  if(!badge) return;
+  const jumlah = state.produk.filter(p=>p.stok<=5).length;
+  if(jumlah > 0){ badge.textContent = jumlah; badge.style.display = 'inline-block'; }
+  else { badge.style.display = 'none'; }
+}
+let state = loadDB();
+if(!state.riwayatBarcode) state.riwayatBarcode = {}; // cache lokal barcode->nama/kategori, tanpa perlu internet
+if(typeof state.kasAwal !== 'number') state.kasAwal = 0; // saldo kas awal (UANG TUNAI saja) sebelum aplikasi dipakai, diatur di Pengaturan
+if(typeof state.modalAwal !== 'number') state.modalAwal = 0; // total MODAL awal (uang tunai + nilai stok yang sudah ada) — dipakai khusus untuk Cek Keseimbangan Modal, tidak memengaruhi Saldo Kas
+if(!state.kasMutasi) state.kasMutasi = []; // catatan kas masuk/keluar manual (setor modal, beli stok, biaya operasional, prive, dll)
+
+/* ============ AKUN & PROTEKSI PASSWORD ============ */
+// Disimpan terpisah dari data warung supaya tidak ikut ke-export/ke-reset saat cadangkan/pulihkan/hapus data.
+const AUTH_KEY = 'warungPondokAuth_v1';
+function loadAuth(){
+  try{
+    const raw = localStorage.getItem(AUTH_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){ console.error('Gagal membaca akun', e); }
+  return null;
+}
+function saveAuth(a){ localStorage.setItem(AUTH_KEY, JSON.stringify(a)); }
+let auth = loadAuth();
+let sesiMasuk = false; // status login untuk sesi berjalan saat ini — reset lagi tiap aplikasi dibuka ulang
+
+// Hash sederhana berbasis JS murni (tanpa Web Crypto) supaya tetap jalan meski diakses lewat IP lokal/HTTP di Termux,
+// bukan enkripsi tingkat bank, tapi cukup untuk mengunci akses menu di HP sendiri.
+function hashPassword(password, salt){
+  const str = salt + '::' + password;
+  let h1 = 5381, h2 = 52711;
+  for(let i=0;i<str.length;i++){
+    const c = str.charCodeAt(i);
+    h1 = (h1 * 33 + c) >>> 0;
+    h2 = (h2 * 33 ^ c) >>> 0;
+  }
+  for(let r=0;r<2000;r++){
+    h1 = (h1 * 33 + r ^ h2) >>> 0;
+    h2 = (h2 * 33 + r ^ h1) >>> 0;
+  }
+  return h1.toString(16) + h2.toString(16);
+}
+function randomSalt(){ return Math.random().toString(36).slice(2) + Date.now().toString(36); }
+
+// Field password dengan tombol mata untuk lihat/sembunyikan isian — supaya saat "password salah" muncul,
+// pengguna bisa langsung cek ketikannya salah di mana (typo, huruf besar-kecil tertukar, dll).
+function fieldPassword(id, labelText, autocomplete){
+  return `<div class="field">
+    <label>${labelText}</label>
+    <div class="password-wrap">
+      <input id="${id}" type="password" autocomplete="${autocomplete||'current-password'}">
+      <button type="button" class="toggle-eye" tabindex="-1" aria-label="Tampilkan password" onclick="toggleLihatPassword('${id}', this)">👁</button>
+    </div>
+  </div>`;
+}
+function toggleLihatPassword(id, btn){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const akanTampil = el.type === 'password';
+  el.type = akanTampil ? 'text' : 'password';
+  btn.textContent = akanTampil ? '🙈' : '👁';
+  btn.setAttribute('aria-label', akanTampil ? 'Sembunyikan password' : 'Tampilkan password');
+}
+
+// Halaman yang wajib login untuk dibuka. Dashboard, Kasir, dan Riwayat sengaja TIDAK dikunci
+// supaya aplikasi bisa langsung dipakai tanpa password dan transaksi harian tetap cepat.
+const HALAMAN_TERKUNCI = ['anggota','produk','laporan','pengaturan','kas'];
+// Semua menu terkunci wajib minta password SETIAP KALI diklik (bukan cukup sekali per sesi)
+// karena berisi data sensitif: saldo/uang anggota, harga & stok barang, laporan omzet/laba warung,
+// arus kas warung, dan cadangkan/pulihkan/hapus data di Pengaturan.
+const HALAMAN_TERKUNCI_SETIAP_KLIK = ['anggota','produk','laporan','pengaturan','kas'];
+
+function mintaLogin(onSuccess){
+  const modeSetup = !auth;
+  openModal(`
+    <div class="modal-head">${modeSetup ? '🔐 Buat Akun Warung' : '🔒 Masuk'}</div>
+    <div class="modal-body">
+      ${modeSetup
+        ? `<p style="font-size:13px;color:var(--muted);margin-top:0;">Ini pertama kali aplikasi dibuka. Buat username & password untuk melindungi menu Anggota, Produk, Laporan, dan Pengaturan. Menu Dashboard, Kasir, dan Riwayat tetap bisa dipakai tanpa login.</p>
+           <div class="field"><label>Username</label><input id="authUser" type="text" autocomplete="username"></div>
+           ${fieldPassword('authPass', 'Password', 'new-password')}
+           ${fieldPassword('authPass2', 'Konfirmasi Password', 'new-password')}
+           <div class="field"><label>Pertanyaan Keamanan (buat jaga-jaga kalau lupa password)</label><input id="authTanya" type="text" placeholder="mis. Nama panggilan masa kecil?"></div>
+           <div class="field"><label>Jawaban</label><input id="authJawab" type="text" placeholder="Jawaban Anda — ingat-ingat ya"></div>`
+        : `<p style="font-size:13px;color:var(--muted);margin-top:0;">Masuk sebagai <strong>${(auth.username||'').replace(/</g,'&lt;')}</strong></p>
+           ${fieldPassword('authPass', 'Password', 'current-password')}
+           <p style="margin:-6px 0 4px;"><a href="#" id="linkLupaPassword" style="color:var(--accent);font-size:12.5px;">Lupa password?</a></p>`
+      }
+      <p id="authError" style="color:#c0392b;font-size:12.5px;margin:-4px 0 10px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" id="btnAuthSubmit">${modeSetup ? 'Buat Akun' : 'Masuk'}</button>
+      </div>
+    </div>
+  `);
+  setTimeout(()=>{ const el = document.getElementById(modeSetup ? 'authUser' : 'authPass'); if(el) el.focus(); }, 50);
+  const linkLupa = document.getElementById('linkLupaPassword');
+  if(linkLupa) linkLupa.addEventListener('click', e=>{ e.preventDefault(); mintaResetPassword(onSuccess); });
+  const tampilkanError = (msg)=>{ const e = document.getElementById('authError'); if(e){ e.textContent = msg; e.style.display = 'block'; } };
+  const submit = ()=>{
+    const p = document.getElementById('authPass').value;
+    if(modeSetup){
+      const u = document.getElementById('authUser').value.trim();
+      const p2 = document.getElementById('authPass2').value;
+      const tanya = document.getElementById('authTanya').value.trim();
+      const jawab = document.getElementById('authJawab').value.trim().toLowerCase();
+      if(!u){ tampilkanError('Username wajib diisi'); return; }
+      if(!p || p.length < 4){ tampilkanError('Password minimal 4 karakter'); return; }
+      if(p !== p2){ tampilkanError('Konfirmasi password tidak cocok'); return; }
+      if(!tanya || !jawab){ tampilkanError('Pertanyaan & jawaban keamanan wajib diisi, buat jaga-jaga kalau lupa password'); return; }
+      const salt = randomSalt();
+      const jawabanSalt = randomSalt();
+      auth = { username: u, salt, hash: hashPassword(p, salt), pertanyaan: tanya, jawabanSalt, jawabanHash: hashPassword(jawab, jawabanSalt) };
+      saveAuth(auth);
+      sesiMasuk = true;
+      closeModal();
+      toast('Akun berhasil dibuat');
+      onSuccess && onSuccess();
+    } else {
+      if(!p){ tampilkanError('Password wajib diisi'); return; }
+      if(hashPassword(p, auth.salt) !== auth.hash){ tampilkanError('Password salah'); return; }
+      sesiMasuk = true;
+      if(!auth.pertanyaan || !auth.jawabanHash){
+        tampilkanNudgeKeamanan(onSuccess);
+      } else {
+        closeModal();
+        onSuccess && onSuccess();
+      }
+    }
+  };
+  document.getElementById('btnAuthSubmit').addEventListener('click', submit);
+  ['authUser','authPass','authPass2','authTanya','authJawab'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submit(); } });
+  });
+}
+
+/* ---- Lupa password: verifikasi pertanyaan keamanan, lalu buat password baru — tanpa perlu hapus data ---- */
+function mintaResetPassword(onSuccess){
+  if(!auth || !auth.pertanyaan || !auth.jawabanHash){
+    openModal(`
+      <div class="modal-head">Lupa Password</div>
+      <div class="modal-body">
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Akun ini belum punya pertanyaan keamanan (dibuat sebelum fitur ini ada), jadi aplikasi tidak bisa memastikan ini benar pemilik akun.</p>
+        <p style="font-size:13.5px;color:var(--muted);">Satu-satunya jalan: hapus data situs ini lewat pengaturan browser. Ini akan menghapus SEMUA data warung juga — kalau punya file cadangan (dari "Unduh Cadangan"), pulihkan lagi setelah bikin akun baru.</p>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="closeModal()">Mengerti</button>
+        </div>
+      </div>
+    `);
+    return;
+  }
+  openModal(`
+    <div class="modal-head">🔑 Lupa Password</div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-top:0;">Jawab pertanyaan keamanan untuk membuat password baru.</p>
+      <p style="font-weight:600;margin:0 0 12px;">${(auth.pertanyaan||'').replace(/</g,'&lt;')}</p>
+      <div class="field"><label>Jawaban</label><input id="rpJawab" type="text"></div>
+      <p id="rpError" style="color:#c0392b;font-size:12.5px;margin:-4px 0 10px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" id="btnRpVerifikasi">Verifikasi</button>
+      </div>
+    </div>
+  `);
+  setTimeout(()=>{ const el = document.getElementById('rpJawab'); if(el) el.focus(); }, 50);
+  const submitJawab = ()=>{
+    const jawab = document.getElementById('rpJawab').value.trim().toLowerCase();
+    const errEl = document.getElementById('rpError');
+    if(hashPassword(jawab, auth.jawabanSalt) !== auth.jawabanHash){
+      errEl.textContent = 'Jawaban salah, coba lagi';
+      errEl.style.display = 'block';
+      return;
+    }
+    bukaFormPasswordBaruSetelahReset(onSuccess);
+  };
+  document.getElementById('btnRpVerifikasi').addEventListener('click', submitJawab);
+  document.getElementById('rpJawab').addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); submitJawab(); } });
+}
+function bukaFormPasswordBaruSetelahReset(onSuccess){
+  openModal(`
+    <div class="modal-head">Buat Password Baru</div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-top:0;">Jawaban benar. Buat password baru untuk <strong>${(auth.username||'').replace(/</g,'&lt;')}</strong>.</p>
+      ${fieldPassword('rpPassBaru', 'Password Baru', 'new-password')}
+      ${fieldPassword('rpPassBaru2', 'Konfirmasi Password Baru', 'new-password')}
+      <p id="rpError2" style="color:#c0392b;font-size:12.5px;margin:-4px 0 10px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" id="btnRpSimpan">Simpan Password Baru</button>
+      </div>
+    </div>
+  `);
+  setTimeout(()=>{ const el = document.getElementById('rpPassBaru'); if(el) el.focus(); }, 50);
+  const simpan = ()=>{
+    const p1 = document.getElementById('rpPassBaru').value;
+    const p2 = document.getElementById('rpPassBaru2').value;
+    const err2 = document.getElementById('rpError2');
+    const tampilkanErr2 = (msg)=>{ err2.textContent = msg; err2.style.display = 'block'; };
+    if(!p1 || p1.length < 4){ tampilkanErr2('Password minimal 4 karakter'); return; }
+    if(p1 !== p2){ tampilkanErr2('Konfirmasi password tidak cocok'); return; }
+    const salt = randomSalt();
+    auth.salt = salt;
+    auth.hash = hashPassword(p1, salt);
+    saveAuth(auth);
+    sesiMasuk = true;
+    closeModal();
+    toast('Password berhasil direset');
+    onSuccess && onSuccess();
+  };
+  document.getElementById('btnRpSimpan').addEventListener('click', simpan);
+  ['rpPassBaru','rpPassBaru2'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', e=>{ if(e.key==='Enter'){ e.preventDefault(); simpan(); } });
+  });
+}
+/* ---- Nudge sekali-jalan buat akun lama (dibuat sebelum fitur pertanyaan keamanan ada) ---- */
+function tampilkanNudgeKeamanan(onSuccess){
+  openModal(`
+    <div class="modal-head">Amankan Akun Anda</div>
+    <div class="modal-body">
+      <p style="font-size:13px;color:var(--muted);margin-top:0;">Akun ini belum punya pertanyaan keamanan. Kalau suatu saat lupa password, satu-satunya cara sekarang adalah hapus semua data aplikasi. Atur pertanyaan keamanan supaya bisa reset password sendiri tanpa kehilangan data?</p>
+      <div class="field"><label>Pertanyaan Keamanan</label><input id="ndTanya" type="text" placeholder="mis. Nama panggilan masa kecil?"></div>
+      <div class="field"><label>Jawaban</label><input id="ndJawab" type="text"></div>
+      <p id="ndError" style="color:#c0392b;font-size:12.5px;margin:-4px 0 10px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn" id="btnNdNanti">Nanti Saja</button>
+        <button class="btn btn-primary" id="btnNdSimpan">Simpan</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('btnNdNanti').addEventListener('click', ()=>{ closeModal(); onSuccess && onSuccess(); });
+  document.getElementById('btnNdSimpan').addEventListener('click', ()=>{
+    const tanya = document.getElementById('ndTanya').value.trim();
+    const jawab = document.getElementById('ndJawab').value.trim().toLowerCase();
+    const errEl = document.getElementById('ndError');
+    if(!tanya || !jawab){ errEl.textContent = 'Pertanyaan & jawaban wajib diisi (atau pilih "Nanti Saja")'; errEl.style.display = 'block'; return; }
+    const jawabanSalt = randomSalt();
+    auth.pertanyaan = tanya;
+    auth.jawabanSalt = jawabanSalt;
+    auth.jawabanHash = hashPassword(jawab, jawabanSalt);
+    saveAuth(auth);
+    closeModal();
+    toast('Pertanyaan keamanan tersimpan');
+    onSuccess && onSuccess();
+  });
+}
+function bukaGantiAkun(){
+  openModal(`
+    <div class="modal-head">Ubah Akun</div>
+    <div class="modal-body">
+      ${fieldPassword('cgPassLama', 'Password saat ini', 'current-password')}
+      <div class="field"><label>Username baru</label><input id="cgUser" type="text" value="${(auth.username||'').replace(/"/g,'&quot;')}" autocomplete="username"></div>
+      ${fieldPassword('cgPassBaru', 'Password baru (kosongkan bila tidak diganti)', 'new-password')}
+      ${fieldPassword('cgPassBaru2', 'Konfirmasi password baru', 'new-password')}
+      <div class="field"><label>Pertanyaan Keamanan</label><input id="cgTanya" type="text" value="${(auth.pertanyaan||'').replace(/"/g,'&quot;')}" placeholder="mis. Nama panggilan masa kecil?"></div>
+      <div class="field"><label>Jawaban ${auth.jawabanHash ? '(kosongkan bila tidak diganti)' : '(wajib diisi)'}</label><input id="cgJawab" type="text" placeholder="${auth.jawabanHash ? 'Kosongkan bila jawaban sama seperti sebelumnya' : 'Isi jawaban untuk pertanyaan di atas'}"></div>
+      <p id="cgError" style="color:#c0392b;font-size:12.5px;margin:-4px 0 10px;display:none;"></p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" id="btnCgSubmit">Simpan</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('btnCgSubmit').addEventListener('click', ()=>{
+    const errEl = document.getElementById('cgError');
+    const tampilkanError = (msg)=>{ errEl.textContent = msg; errEl.style.display = 'block'; };
+    const passLama = document.getElementById('cgPassLama').value;
+    const userBaru = document.getElementById('cgUser').value.trim();
+    const passBaru = document.getElementById('cgPassBaru').value;
+    const passBaru2 = document.getElementById('cgPassBaru2').value;
+    const tanyaBaru = document.getElementById('cgTanya').value.trim();
+    const jawabBaru = document.getElementById('cgJawab').value.trim().toLowerCase();
+    if(hashPassword(passLama, auth.salt) !== auth.hash){ tampilkanError('Password saat ini salah'); return; }
+    if(!userBaru){ tampilkanError('Username tidak boleh kosong'); return; }
+    if(passBaru || passBaru2){
+      if(passBaru.length < 4){ tampilkanError('Password baru minimal 4 karakter'); return; }
+      if(passBaru !== passBaru2){ tampilkanError('Konfirmasi password baru tidak cocok'); return; }
+    }
+    if(tanyaBaru && !jawabBaru && !auth.jawabanHash){ tampilkanError('Isi jawaban untuk pertanyaan keamanan yang baru'); return; }
+    const salt = passBaru ? randomSalt() : auth.salt;
+    const hash = passBaru ? hashPassword(passBaru, salt) : auth.hash;
+    let jawabanSalt = auth.jawabanSalt;
+    let jawabanHash = auth.jawabanHash;
+    if(jawabBaru){
+      jawabanSalt = randomSalt();
+      jawabanHash = hashPassword(jawabBaru, jawabanSalt);
+    }
+    auth = { username: userBaru, salt, hash, pertanyaan: tanyaBaru || auth.pertanyaan || '', jawabanSalt, jawabanHash };
+    saveAuth(auth);
+    closeModal();
+    toast('Akun berhasil diperbarui');
+  });
+}
+
+function uid(prefix){ return prefix + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function rupiah(n){ return 'Rp' + Math.round(n).toLocaleString('id-ID'); }
+// Label qty item transaksi, menampilkan satuan (pcs / Dus / dll) supaya jelas beda beli satuan vs satuan besar.
+function labelItemQty(i){ return `x${i.qty}${i.satuanLabel ? ' '+i.satuanLabel : ''}`; }
+
+/* ============ FORMAT TITIK RIBUAN UNTUK INPUT ANGKA (harga, nominal, dsb) ============ */
+function formatRibuan(val){
+  const bersih = (val||'').toString().replace(/[^\d]/g,'');
+  if(!bersih) return '';
+  return parseInt(bersih,10).toLocaleString('id-ID');
+}
+function angkaSaja(val){
+  const bersih = (val||'').toString().replace(/[^\d]/g,'');
+  return bersih ? parseInt(bersih,10) : 0;
+}
+function attachFormatRibuan(id, onAfter){
+  const el = document.getElementById(id);
+  if(!el) return;
+  if(el.value) el.value = formatRibuan(el.value);
+  el.addEventListener('input', ()=>{
+    const posDariBelakang = el.value.length - el.selectionStart;
+    el.value = formatRibuan(el.value);
+    const posBaru = el.value.length - posDariBelakang;
+    el.selectionStart = el.selectionEnd = Math.max(0, posBaru);
+    if(onAfter) onAfter();
+  });
+}
+
+/* ============ BARCODE (Code 39) — dibuat manual tanpa library eksternal, agar tetap offline ============ */
+const CODE39_PATTERNS = {
+  '0':'000110100','1':'100100001','2':'001100001','3':'101100000','4':'000110001',
+  '5':'100110000','6':'001110000','7':'000100101','8':'100100100','9':'001100100',
+  'A':'100001001','B':'001001001','C':'101001000','D':'000011001','E':'100011000',
+  'F':'001011000','G':'000001101','H':'100001100','I':'001001100','J':'000011100',
+  'K':'100000011','L':'001000011','M':'101000010','N':'000010011','O':'100010010',
+  'P':'001010010','Q':'000000111','R':'100000110','S':'001000110','T':'000010110',
+  'U':'110000001','V':'011000001','W':'111000000','X':'010010001','Y':'110010000',
+  'Z':'011010000','-':'010000101','*':'010010100'
+};
+function generateCode39SVG(text, opts){
+  opts = opts || {};
+  text = (text||'').toUpperCase();
+  const barWidth = opts.barWidth || 2;
+  const wideRatio = 2.5;
+  const height = opts.height || 50;
+  const full = '*' + text + '*';
+  let x = 0;
+  const rects = [];
+  for(const ch of full){
+    const pattern = CODE39_PATTERNS[ch];
+    if(!pattern) continue;
+    for(let i=0;i<pattern.length;i++){
+      const isBar = i % 2 === 0;
+      const w = pattern[i]==='1' ? barWidth*wideRatio : barWidth;
+      if(isBar) rects.push(`<rect x="${x.toFixed(2)}" y="0" width="${w.toFixed(2)}" height="${height}" fill="#000"/>`);
+      x += w;
+    }
+    x += barWidth;
+  }
+  const totalWidth = x;
+  const totalHeight = height + 20;
+  return `<svg viewBox="0 0 ${totalWidth.toFixed(2)} ${totalHeight}" width="${totalWidth.toFixed(2)}" height="${totalHeight}" style="width:100%;max-width:320px;height:auto;" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="${totalWidth.toFixed(2)}" height="${totalHeight}" fill="#fff"/>
+    ${rects.join('')}
+    <text x="${(totalWidth/2).toFixed(2)}" y="${height+16}" font-family="'Courier New',monospace" font-size="13" letter-spacing="2" text-anchor="middle">${text}</text>
+  </svg>`;
+}
+function updateBarcodePreview(raw){
+  const box = document.getElementById('barcodePreviewBox');
+  if(!box) return;
+  const clean = (raw||'').toUpperCase().replace(/[^0-9A-Z-]/g,'');
+  if(!clean){ box.innerHTML = '<span style="color:var(--muted);font-size:12px;">Isi nomor induk untuk melihat barcode</span>'; return; }
+  box.innerHTML = generateCode39SVG(clean, {height:50, barWidth:2});
+}
+function todayStr(d){ d = d || new Date(); return d.toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'}); }
+function todayISO(){ return tanggalLokal(); }
+function tagTipeTransaksi(t){
+  let tag;
+  if(t.tipe==='topup') tag = '<span class="tag topup">Top Up</span>';
+  else if(t.tipe==='tarik') tag = '<span class="tag tarik">Tarik Tunai</span>';
+  else if(t.metode==='hutang') tag = t.statusBayar==='lunas' ? '<span class="tag lunas">Hutang · Lunas</span>' : '<span class="tag hutang">Hutang · Belum Bayar</span>';
+  else tag = t.metode==='saldo' ? '<span class="tag saldo">Saldo</span>' : '<span class="tag tunai">Tunai</span>';
+  if(t.dibatalkan) tag += ' <span class="tag batal">Dibatalkan</span>';
+  return tag;
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toast._tm);
+  toast._tm = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+/* ============ NAV / ROUTER ============ */
+const pages = {};
+document.getElementById('nav').addEventListener('click', e=>{
+  const btn = e.target.closest('button[data-page]');
+  if(!btn) return;
+  goPage(btn.dataset.page);
+});
+function goPage(name){
+  const wajibSetiapKlik = HALAMAN_TERKUNCI_SETIAP_KLIK.includes(name);
+  if(HALAMAN_TERKUNCI.includes(name) && (wajibSetiapKlik || !sesiMasuk)){
+    // Anggota/Produk/Laporan/Pengaturan: password diminta SETIAP KALI tab ini diklik, demi keamanan data.
+    mintaLogin(()=>renderPage(name));
+    return;
+  }
+  renderPage(name);
+}
+function renderPage(name){
+  document.querySelectorAll('.nav button').forEach(b=>b.classList.toggle('active', b.dataset.page===name));
+  document.getElementById('main').innerHTML = pages[name]();
+  attachPageEvents(name);
+  window.scrollTo(0,0);
+}
+
+/* ============ MODAL HELPERS (form/dialog utama) ============ */
+function openModal(html){
+  document.getElementById('modal').innerHTML = html;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeModal(){
+  document.getElementById('overlay').classList.remove('show');
+  document.getElementById('modal').innerHTML = '';
+}
+document.getElementById('overlay').addEventListener('click', e=>{
+  if(e.target.id === 'overlay') closeModal();
+});
+
+/* ============ MODAL KHUSUS SCAN KAMERA — overlay terpisah agar TIDAK menghapus modal/form yang sedang terbuka di baliknya (mis. form Tambah Produk) ============ */
+function openScanModal(html){
+  document.getElementById('scanModal').innerHTML = html;
+  document.getElementById('scanOverlay').classList.add('show');
+}
+function closeScanModal(){
+  if(scanRAF){ cancelAnimationFrame(scanRAF); scanRAF = null; }
+  if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream = null; }
+  document.getElementById('scanOverlay').classList.remove('show');
+  document.getElementById('scanModal').innerHTML = '';
+}
+document.getElementById('scanOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'scanOverlay') closeScanModal();
+});
+
+/* ============ SCAN KAMERA — pakai BarcodeDetector bawaan Chrome, tanpa library luar ============ */
+let scanStream = null;
+let scanRAF = null;
+async function openCameraScan(onDetect, opts){
+  opts = opts || {};
+  const continuous = !!opts.continuous;
+  const judul = opts.title || 'Scan Barcode';
+  const supported = 'BarcodeDetector' in window;
+  openScanModal(`
+    <div class="modal-head">${judul}</div>
+    <div class="modal-body">
+      ${supported ? `
+        <div class="scan-wrap">
+          <video id="scanVideo" autoplay playsinline muted></video>
+          <div class="scan-guide"><div class="laser"></div></div>
+        </div>
+        <div class="scan-hint-row">
+          <p class="hint">${continuous ? 'Arahkan tiap barcode satu-satu — otomatis masuk ke keranjang. Tekan Selesai kalau sudah beres.' : 'Posisikan barcode di dalam kotak, sejajar dan mengisi lebar kotak, hingga terbaca otomatis.'}</p>
+          <button type="button" class="btn btn-sm" id="btnTorch" style="display:none;">🔦 Lampu</button>
+        </div>
+        ${continuous ? `<p style="font-size:12.5px;color:var(--muted);margin:8px 0 0;">Barang terscan: <strong id="scanContinuousCount">0</strong></p>` : ''}
+      ` : `
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Kamera browser ini tidak mendukung pemindaian barcode. Gunakan alat scanner Bluetooth/USB (terbaca otomatis di kolom input), atau isi kode secara manual.</p>
+      `}
+      <div class="modal-actions">
+        <button class="btn ${continuous?'btn-primary':''}" onclick="closeScanModal()">${supported ? (continuous ? 'Selesai' : 'Batal') : 'Tutup'}</button>
+      </div>
+    </div>
+  `);
+  if(!supported) return;
+  try{
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      }
+    });
+    const video = document.getElementById('scanVideo');
+    if(!video) return;
+    video.srcObject = scanStream;
+    await video.play().catch(()=>{});
+
+    // Coba aktifkan fokus kontinu & siapkan tombol lampu senter bila kamera mendukung
+    const [track] = scanStream.getVideoTracks();
+    const caps = track.getCapabilities ? track.getCapabilities() : {};
+    if(caps.focusMode && caps.focusMode.includes('continuous')){
+      track.applyConstraints({ advanced: [{ focusMode: 'continuous' }] }).catch(()=>{});
+    }
+    if(caps.torch){
+      const btnTorch = document.getElementById('btnTorch');
+      let torchOn = false;
+      btnTorch.style.display = 'inline-flex';
+      btnTorch.addEventListener('click', ()=>{
+        torchOn = !torchOn;
+        track.applyConstraints({ advanced: [{ torch: torchOn }] }).catch(()=>{});
+        btnTorch.textContent = torchOn ? '🔦 Matikan' : '🔦 Lampu';
+      });
+    }
+
+    // Format yang relevan saja (kartu anggota Code 39 + barcode kemasan produk umum) agar deteksi lebih cepat & akurat
+    let detector;
+    try{
+      detector = new BarcodeDetector({ formats: ['code_39','code_128','ean_13','ean_8','upc_a','upc_e','codabar','itf'] });
+    }catch(e){
+      detector = new BarcodeDetector();
+    }
+
+    const cropCanvas = document.createElement('canvas');
+    const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
+
+    // Hitung area kotak panduan dalam koordinat piksel asli video, agar deteksi hanya fokus di dalam kotak itu
+    function getCropRect(){
+      const guideEl = document.querySelector('.scan-guide');
+      if(!guideEl || !video.videoWidth) return null;
+      const vRect = video.getBoundingClientRect();
+      const gRect = guideEl.getBoundingClientRect();
+      if(!vRect.width || !vRect.height) return null;
+      const scaleX = video.videoWidth / vRect.width;
+      const scaleY = video.videoHeight / vRect.height;
+      const sx = Math.max(0, (gRect.left - vRect.left) * scaleX);
+      const sy = Math.max(0, (gRect.top - vRect.top) * scaleY);
+      const sw = Math.min(video.videoWidth - sx, gRect.width * scaleX);
+      const sh = Math.min(video.videoHeight - sy, gRect.height * scaleY);
+      return { sx, sy, sw, sh };
+    }
+
+    let busy = false;
+    let lastCode = null, lastTime = 0, jumlahTerscan = 0;
+    const tick = async ()=>{
+      if(!scanStream) return;
+      if(!busy && video.videoWidth){
+        busy = true;
+        try{
+          const rect = getCropRect();
+          if(rect && rect.sw > 0 && rect.sh > 0){
+            cropCanvas.width = rect.sw;
+            cropCanvas.height = rect.sh;
+            cropCtx.drawImage(video, rect.sx, rect.sy, rect.sw, rect.sh, 0, 0, rect.sw, rect.sh);
+            const codes = await detector.detect(cropCanvas);
+            if(codes && codes.length){
+              const value = codes[0].rawValue;
+              const now = Date.now();
+              const duplikat = continuous && value === lastCode && (now - lastTime) < 1500;
+              if(!duplikat){
+                lastCode = value; lastTime = now;
+                if(navigator.vibrate) navigator.vibrate(70);
+                if(continuous){
+                  jumlahTerscan++;
+                  const counterEl = document.getElementById('scanContinuousCount');
+                  if(counterEl) counterEl.textContent = jumlahTerscan;
+                  onDetect(value);
+                  // kamera tetap terbuka untuk scan barang berikutnya
+                } else {
+                  closeScanModal();
+                  onDetect(value);
+                  busy = false;
+                  return;
+                }
+              }
+            }
+          }
+        }catch(e){ /* frame belum siap, coba lagi */ }
+        busy = false;
+      }
+      scanRAF = requestAnimationFrame(tick);
+    };
+    scanRAF = requestAnimationFrame(tick);
+  }catch(e){
+    toast('Tidak bisa mengakses kamera — cek izin kamera di browser');
+    closeScanModal();
+  }
+}
+
+/* ============ DASHBOARD ============ */
+// Hitung produk paling laris sepanjang waktu (berdasar jumlah terjual), dipakai untuk panel Top 10 di Dashboard.
+function hitungProdukTerlaris(limit){
+  const map = {};
+  state.transaksi.forEach(t=>{
+    if(t.tipe!=='jual' || t.dibatalkan) return;
+    t.items.forEach(i=>{
+      const key = i.produkId || i.nama;
+      if(!map[key]) map[key] = { nama:i.nama, qty:0, omzet:0 };
+      map[key].qty += i.qty*(i.pcsPerSatuan||1);
+      map[key].omzet += i.harga*i.qty;
+    });
+  });
+  return Object.values(map).sort((a,b)=>b.qty-a.qty).slice(0, limit || 10);
+}
+pages.dashboard = function(){
+  const totalSaldo = state.anggota.reduce((s,a)=>s+a.saldo,0);
+  const todayTx = state.transaksi.filter(t=>tanggalLokal(new Date(t.tanggal))===todayISO() && t.tipe==='jual' && !t.dibatalkan);
+  const todayOmzet = todayTx.reduce((s,t)=>s+t.total,0);
+  const todayModal = todayTx.reduce((s,t)=>s+t.items.reduce((ss,i)=>ss+(i.hargaBeli||0)*i.qty,0),0);
+  let todayOmzetTunai=0, todayModalTunai=0, todayOmzetKredit=0, todayModalKredit=0;
+  todayTx.forEach(t=>{
+    const beli = t.items.reduce((ss,i)=>ss+(i.hargaBeli||0)*i.qty,0);
+    if(t.metode==='hutang'){ todayOmzetKredit+=t.total; todayModalKredit+=beli; }
+    else { todayOmzetTunai+=t.total; todayModalTunai+=beli; }
+  });
+  const todayLabaTunai = todayOmzetTunai - todayModalTunai;
+  const todayLabaKredit = todayOmzetKredit - todayModalKredit;
+  const todayLaba = todayOmzet - todayModal;
+  const todayTopup = state.transaksi.filter(t=>t.tipe==='topup' && !t.dibatalkan && tanggalLokal(new Date(t.tanggal))===todayISO()).reduce((s,t)=>s+t.total,0);
+  const todayTarik = state.transaksi.filter(t=>t.tipe==='tarik' && !t.dibatalkan && tanggalLokal(new Date(t.tanggal))===todayISO()).reduce((s,t)=>s+t.total,0);
+  const lowStock = state.produk.filter(p=>p.stok<=5);
+  const recent = [...state.transaksi].reverse().slice(0,6);
+  const produkTerlaris = hitungProdukTerlaris(10);
+
+  return `
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-sub">${todayStr()} — ringkasan warung hari ini</p>
+    <div class="cards">
+      <div class="card accent">
+        <div class="label">Saldo Kas Saat Ini</div>
+        <div class="value">${rupiah(hitungSaldoKasSaatIni())}</div>
+      </div>
+      <div class="card accent">
+        <div class="label">Total Saldo Anggota</div>
+        <div class="value">${rupiah(totalSaldo)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Omzet Hari Ini</div>
+        <div class="value">${rupiah(todayOmzet)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Laba Tunai Hari Ini</div>
+        <div class="value" style="color:var(--success);">${rupiah(todayLabaTunai)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Laba Kredit Hari Ini</div>
+        <div class="value" style="color:var(--danger);">${rupiah(todayLabaKredit)}</div>
+      </div>
+      <div class="card accent">
+        <div class="label">Total Laba Hari Ini</div>
+        <div class="value" style="color:var(--success);">${rupiah(todayLaba)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Transaksi Hari Ini</div>
+        <div class="value">${todayTx.length}</div>
+      </div>
+      <div class="card">
+        <div class="label">Top Up Hari Ini</div>
+        <div class="value">${rupiah(todayTopup)}</div>
+      </div>
+      <div class="card">
+        <div class="label">Tarik Tunai Hari Ini</div>
+        <div class="value" style="color:var(--danger);">${rupiah(todayTarik)}</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Stok Menipis (≤5) <span class="badge-count">${lowStock.length}</span></div>
+      <div class="panel-body">
+        ${lowStock.length ? `<table><thead><tr><th>Produk</th><th>Kategori</th><th class="num">Stok</th></tr></thead><tbody>
+          ${lowStock.map(p=>`<tr><td>${p.nama}</td><td>${p.kategori||'-'}</td><td class="num"><span class="tag low">${p.stok}</span></td></tr>`).join('')}
+        </tbody></table>` : `<div class="empty">Semua stok aman.</div>`}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">🏆 Produk Terlaris <span class="badge-count" style="background:var(--accent);color:#2B2410;">Top 10</span></div>
+      <div class="panel-body">
+        ${produkTerlaris.length ? `<table><thead><tr><th style="width:34px;">#</th><th>Produk</th><th class="num">Terjual</th><th class="num">Omzet</th></tr></thead><tbody>
+          ${produkTerlaris.map((p,i)=>`<tr>
+            <td><span class="rank-badge${i===0?' top1':i===1?' top2':i===2?' top3':''}">${i+1}</span></td>
+            <td>${p.nama}</td>
+            <td class="num">${p.qty}</td>
+            <td class="num">${rupiah(p.omzet)}</td>
+          </tr>`).join('')}
+        </tbody></table>` : `<div class="empty">Belum ada penjualan.</div>`}
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">Transaksi Terbaru</div>
+      <div class="panel-body">
+        ${recent.length ? `<table><thead><tr><th>Waktu</th><th>Anggota</th><th>Tipe</th><th class="num">Total</th></tr></thead><tbody>
+          ${recent.map(t=>`<tr>
+            <td>${new Date(t.tanggal).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+            <td>${t.anggotaNama || 'Umum (tunai)'}</td>
+            <td>${tagTipeTransaksi(t)}</td>
+            <td class="num">${rupiah(t.total)}</td>
+          </tr>`).join('')}
+        </tbody></table>` : `<div class="empty">Belum ada transaksi.</div>`}
+      </div>
+    </div>
+  `;
+};
+
+/* ============ ANGGOTA ============ */
+pages.anggota = function(){
+  return `
+    <h1 class="page-title">Anggota</h1>
+    <p class="page-sub">Kelola data santri/anggota dan saldo warung mereka</p>
+    <div class="row-between">
+      <div class="input-row" style="flex:1;min-width:220px;">
+        <input type="text" class="search" style="width:100%;" id="cariAnggota" placeholder="Cari nama / kamar / scan barcode...">
+        <button class="btn btn-accent" id="btnScanAnggotaCari">📷 Scan</button>
+      </div>
+      <button class="btn btn-primary" id="btnTambahAnggota">+ Tambah Anggota</button>
+    </div>
+    <div class="panel"><div class="panel-body" id="tabelAnggotaWrap"></div></div>
+  `;
+};
+function renderTabelAnggota(filter){
+  filter = (filter||'').toLowerCase();
+  const list = state.anggota.filter(a => a.nama.toLowerCase().includes(filter) || (a.kamar||'').toLowerCase().includes(filter) || (a.nomorInduk||'').toLowerCase().includes(filter));
+  const wrap = document.getElementById('tabelAnggotaWrap');
+  if(!wrap) return;
+  if(!list.length){ wrap.innerHTML = `<div class="empty">Belum ada anggota. Klik "Tambah Anggota" untuk mulai.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Nama</th><th>Kamar/Kelas</th><th>No. Induk</th><th class="num">Saldo</th><th></th></tr></thead><tbody>
+    ${list.map(a=>`<tr>
+      <td>${a.nama}</td>
+      <td>${a.kamar||'-'}</td>
+      <td>${a.nomorInduk ? `<span style="cursor:pointer;text-decoration:underline;text-decoration-style:dotted;color:var(--primary-dark);" onclick="openLihatBarcode('${a.id}')" title="Lihat & cetak barcode">${a.nomorInduk} 🔳</span>` : '<span style="color:var(--muted);">-</span>'}</td>
+      <td class="num">${rupiah(a.saldo)}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn btn-sm btn-accent" onclick="topupPerluPassword('${a.id}')">Top Up</button>
+        <button class="btn btn-sm" onclick="tarikTunaiPerluPassword('${a.id}')" ${a.saldo<=0?'disabled':''}>Tarik Tunai</button>
+        <button class="btn btn-sm" onclick="openRiwayatAnggota('${a.id}')">Riwayat</button>
+        <button class="btn btn-sm" onclick="editAnggotaPerluPassword('${a.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="hapusAnggota('${a.id}')">Hapus</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+function openLihatBarcode(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a || !a.nomorInduk) return;
+  openModal(`
+    <div class="modal-head">Kartu Barcode Anggota</div>
+    <div class="modal-body">
+      <div class="barcode-print" id="kartuBarcodeArea">
+        <div style="font-family:var(--font-head);font-size:16px;margin-bottom:2px;">${a.nama}</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:10px;">${a.kamar||''}</div>
+        <div class="barcode-preview" id="barcodeBesar"></div>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Tutup</button>
+        <button class="btn" onclick="exportKartuAnggota('${a.id}')">⬇ Unduh Gambar</button>
+        <button class="btn btn-primary" onclick="window.print()">Cetak Kartu</button>
+      </div>
+    </div>
+  `);
+  document.getElementById('barcodeBesar').innerHTML = generateCode39SVG(a.nomorInduk, {height:70, barWidth:3});
+}
+function exportKartuAnggota(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a || !a.nomorInduk) return;
+  const svgEl = document.querySelector('#barcodeBesar svg');
+  if(!svgEl){ toast('Barcode belum siap'); return; }
+  const svgW = parseFloat(svgEl.getAttribute('width')) || 320;
+  const svgH = parseFloat(svgEl.getAttribute('height')) || 90;
+  const svgData = new XMLSerializer().serializeToString(svgEl);
+  const svgUrl = URL.createObjectURL(new Blob([svgData], {type:'image/svg+xml;charset=utf-8'}));
+  const img = new Image();
+  img.onload = ()=>{
+    const scale = 3;
+    const padX = 24, headH = a.kamar ? 64 : 46;
+    const canvas = document.createElement('canvas');
+    canvas.width = (svgW + padX*2) * scale;
+    canvas.height = (svgH + headH + 20) * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.scale(scale, scale);
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#22281F';
+    ctx.font = "bold 18px Georgia, 'Iowan Old Style', serif";
+    ctx.fillText(a.nama, (svgW+padX*2)/2, 26);
+    if(a.kamar){
+      ctx.font = "12.5px sans-serif";
+      ctx.fillStyle = '#6E6858';
+      ctx.fillText(a.kamar, (svgW+padX*2)/2, 44);
+    }
+    ctx.drawImage(img, padX, headH-8, svgW, svgH);
+    URL.revokeObjectURL(svgUrl);
+    canvas.toBlob(blob=>{
+      if(!blob){ toast('Gagal membuat gambar kartu'); return; }
+      const dl = document.createElement('a');
+      dl.href = URL.createObjectURL(blob);
+      dl.download = `kartu-barcode-${a.nomorInduk}.png`;
+      dl.click();
+      URL.revokeObjectURL(dl.href);
+      toast('Gambar kartu diunduh');
+    }, 'image/png');
+  };
+  img.onerror = ()=>{ URL.revokeObjectURL(svgUrl); toast('Gagal membuat gambar kartu'); };
+  img.src = svgUrl;
+}
+/* ============ RIWAYAT PER ANGGOTA (harian/mingguan/bulanan) ============ */
+let riwayatAnggotaId = null;
+function openRiwayatAnggota(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  riwayatAnggotaId = id;
+  openModal(`
+    <div class="modal-head">Riwayat — ${a.nama}</div>
+    <div class="modal-body">
+      <div class="filters" style="margin-bottom:12px;">
+        <select class="search" id="riwPeriode" onchange="gantiPeriodeRiwayatAnggota()">
+          <option value="harian">Harian</option>
+          <option value="mingguan">Mingguan</option>
+          <option value="bulanan">Bulanan</option>
+        </select>
+        <span id="riwInputWrap"><input type="date" class="search" id="riwTanggal" value="${todayISO()}"></span>
+      </div>
+      <div id="riwAnggotaWrap"></div>
+      <div class="modal-actions"><button class="btn" onclick="closeModal()">Tutup</button></div>
+    </div>
+  `);
+  document.getElementById('riwTanggal').addEventListener('change', renderRiwayatAnggota);
+  renderRiwayatAnggota();
+}
+function gantiPeriodeRiwayatAnggota(){
+  const periode = document.getElementById('riwPeriode').value;
+  const wrap = document.getElementById('riwInputWrap');
+  wrap.innerHTML = periode==='bulanan'
+    ? `<input type="month" class="search" id="riwTanggal" value="${todayISO().slice(0,7)}">`
+    : `<input type="date" class="search" id="riwTanggal" value="${todayISO()}">`;
+  document.getElementById('riwTanggal').addEventListener('change', renderRiwayatAnggota);
+  renderRiwayatAnggota();
+}
+function renderRiwayatAnggota(){
+  const id = riwayatAnggotaId;
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  const periode = document.getElementById('riwPeriode').value;
+  const tglVal = document.getElementById('riwTanggal').value;
+  if(!tglVal) return;
+  let dari, sampai;
+  if(periode==='harian'){ dari = tglVal; sampai = tglVal; }
+  else if(periode==='mingguan'){ ({dari, sampai} = rangeMinggu(tglVal)); }
+  else { ({dari, sampai} = rangeBulan(tglVal)); }
+  const list = state.transaksi.filter(t=> t.anggotaId===id && tanggalLokal(new Date(t.tanggal))>=dari && tanggalLokal(new Date(t.tanggal))<=sampai).slice().reverse();
+  const totalBelanja = list.filter(t=>t.tipe==='jual' && !t.dibatalkan).reduce((s,t)=>s+t.total,0);
+  const totalTopup = list.filter(t=>t.tipe==='topup' && !t.dibatalkan).reduce((s,t)=>s+t.total,0);
+  const totalTarik = list.filter(t=>t.tipe==='tarik' && !t.dibatalkan).reduce((s,t)=>s+t.total,0);
+  const labelRentang = dari===sampai
+    ? new Date(dari).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})
+    : `${new Date(dari).toLocaleDateString('id-ID',{day:'2-digit',month:'short'})} — ${new Date(sampai).toLocaleDateString('id-ID',{day:'2-digit',month:'short',year:'numeric'})}`;
+  const wrap = document.getElementById('riwAnggotaWrap');
+  wrap.innerHTML = `
+    <p style="font-size:12.5px;color:var(--muted);margin:0 0 10px;">${labelRentang}</p>
+    <div class="cards" style="margin-bottom:12px;">
+      <div class="card"><div class="label">Belanja</div><div class="value">${rupiah(totalBelanja)}</div></div>
+      <div class="card"><div class="label">Top Up</div><div class="value" style="color:var(--success);">${rupiah(totalTopup)}</div></div>
+      <div class="card"><div class="label">Tarik Tunai</div><div class="value" style="color:var(--danger);">${rupiah(totalTarik)}</div></div>
+    </div>
+    ${list.length ? `<table><thead><tr><th>Waktu</th><th>Detail</th><th>Tipe</th><th class="num">Total</th></tr></thead><tbody>
+      ${list.map(t=>`<tr style="${t.dibatalkan?'opacity:.55;':''}">
+        <td>${new Date(t.tanggal).toLocaleString('id-ID',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+        <td style="color:var(--muted);font-size:12.5px;">${(t.tipe==='topup'||t.tipe==='tarik') ? (t.catatan||'-') : t.items.map(i=>`${i.nama} ${labelItemQty(i)}`).join(', ')}</td>
+        <td>${tagTipeTransaksi(t)}</td>
+        <td class="num">${rupiah(t.total)}</td>
+      </tr>`).join('')}
+    </tbody></table>` : `<div class="empty">Tidak ada transaksi pada periode ini.</div>`}
+  `;
+}
+function openTambahAnggota(){
+  openModal(`
+    <div class="modal-head">Tambah Anggota</div>
+    <div class="modal-body">
+      <div class="field"><label>Nama</label><input id="fNama" type="text" placeholder="Nama santri"></div>
+      <div class="field"><label>Kamar / Kelas</label><input id="fKamar" type="text" placeholder="mis. Kamar 3 / Kelas 8A"></div>
+      <div class="field"><label>Nomor Induk Pondok</label><input id="fNomorInduk" type="text" placeholder="mis. 2024001" oninput="this.value=this.value.toUpperCase().replace(/[^0-9A-Z-]/g,''); updateBarcodePreview(this.value)"></div>
+      <div class="field"><label>Barcode</label><div class="barcode-preview" id="barcodePreviewBox"><span style="color:var(--muted);font-size:12px;">Isi nomor induk untuk melihat barcode</span></div></div>
+      <div class="field"><label>Saldo Awal</label><input id="fSaldo" type="text" inputmode="numeric" placeholder="0"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="simpanAnggota()">Simpan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fSaldo');
+  setTimeout(()=>document.getElementById('fNama').focus(),50);
+}
+function simpanAnggota(){
+  const nama = document.getElementById('fNama').value.trim();
+  const kamar = document.getElementById('fKamar').value.trim();
+  const nomorInduk = document.getElementById('fNomorInduk').value.trim();
+  const saldo = angkaSaja(document.getElementById('fSaldo').value);
+  if(!nama){ toast('Nama wajib diisi'); return; }
+  if(nomorInduk && state.anggota.some(a=>a.nomorInduk===nomorInduk)){ toast('Nomor induk sudah dipakai anggota lain'); return; }
+  state.anggota.push({ id: uid('agt'), nama, kamar, nomorInduk, saldo, createdAt: new Date().toISOString() });
+  saveDB(); closeModal(); toast('Anggota ditambahkan'); renderPage('anggota');
+}
+function openEditAnggota(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  openModal(`
+    <div class="modal-head">Edit Anggota</div>
+    <div class="modal-body">
+      <div class="field"><label>Nama</label><input id="fNama" type="text" value="${a.nama}"></div>
+      <div class="field"><label>Kamar / Kelas</label><input id="fKamar" type="text" value="${a.kamar||''}"></div>
+      <div class="field"><label>Nomor Induk Pondok</label><input id="fNomorInduk" type="text" value="${a.nomorInduk||''}" placeholder="mis. 2024001" oninput="this.value=this.value.toUpperCase().replace(/[^0-9A-Z-]/g,''); updateBarcodePreview(this.value)"></div>
+      <div class="field"><label>Barcode</label><div class="barcode-preview" id="barcodePreviewBox"></div></div>
+      <div class="field"><label>Saldo (koreksi manual)</label><input id="fSaldo" type="text" inputmode="numeric" value="${a.saldo}"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="updateAnggota('${id}')">Simpan Perubahan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fSaldo');
+  updateBarcodePreview(a.nomorInduk||'');
+}
+function updateAnggota(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  const nomorInduk = document.getElementById('fNomorInduk').value.trim();
+  if(nomorInduk && state.anggota.some(x=>x.nomorInduk===nomorInduk && x.id!==id)){ toast('Nomor induk sudah dipakai anggota lain'); return; }
+  a.nama = document.getElementById('fNama').value.trim() || a.nama;
+  a.kamar = document.getElementById('fKamar').value.trim();
+  a.nomorInduk = nomorInduk;
+  a.saldo = angkaSaja(document.getElementById('fSaldo').value);
+  saveDB(); closeModal(); toast('Perubahan disimpan'); renderPage('anggota');
+}
+function hapusAnggota(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  if(!confirm(`Hapus anggota "${a.nama}"? Riwayat transaksinya tetap tersimpan.`)) return;
+  state.anggota = state.anggota.filter(x=>x.id!==id);
+  saveDB(); toast('Anggota dihapus'); renderPage('anggota');
+}
+// Top Up, Tarik Tunai, dan Edit menyentuh saldo/data anggota secara langsung, jadi masing-masing
+// WAJIB minta password login dulu setiap kali diklik — walau tab Anggota sendiri sudah login —
+// supaya tidak sembarang orang bisa ubah saldo/data hanya karena kasir sedang lupa keluar dari tab ini.
+function topupPerluPassword(id){ mintaLogin(()=>openTopup(id)); }
+function tarikTunaiPerluPassword(id){ mintaLogin(()=>openTarikTunai(id)); }
+function editAnggotaPerluPassword(id){ mintaLogin(()=>openEditAnggota(id)); }
+function openTopup(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  openModal(`
+    <div class="modal-head">Top Up Saldo</div>
+    <div class="modal-body">
+      <p style="margin-top:0;color:var(--muted);font-size:13.5px;">${a.nama} · Saldo saat ini: <strong>${rupiah(a.saldo)}</strong></p>
+      <div class="field"><label>Nominal Top Up</label><input id="fNominal" type="text" inputmode="numeric" placeholder="mis. 50.000"></div>
+      <div class="field"><label>Catatan (opsional)</label><input id="fCatatan" type="text" placeholder="mis. dari orang tua"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-accent" onclick="prosesTopup('${id}')">Top Up</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fNominal');
+  setTimeout(()=>document.getElementById('fNominal').focus(),50);
+}
+function prosesTopup(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  const nominal = angkaSaja(document.getElementById('fNominal').value);
+  if(!nominal || nominal<=0){ toast('Nominal tidak valid'); return; }
+  const catatan = document.getElementById('fCatatan').value.trim();
+  a.saldo += nominal;
+  state.transaksi.push({
+    id: uid('trx'), tipe:'topup', tanggal: new Date().toISOString(),
+    anggotaId: a.id, anggotaNama: a.nama, items:[], total: nominal,
+    metode:'topup', catatan
+  });
+  saveDB(); closeModal(); toast(`Top up ${rupiah(nominal)} berhasil`); renderPage('anggota');
+}
+function openTarikTunai(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  if(a.saldo<=0){ toast('Saldo anggota ini kosong'); return; }
+  openModal(`
+    <div class="modal-head">Tarik Tunai</div>
+    <div class="modal-body">
+      <p style="margin-top:0;color:var(--muted);font-size:13.5px;">${a.nama} · Saldo saat ini: <strong>${rupiah(a.saldo)}</strong></p>
+      <div class="field"><label>Nominal Tarik Tunai</label><input id="fNominal" type="text" inputmode="numeric" placeholder="mis. 20.000"></div>
+      <div class="field"><label>Catatan (opsional)</label><input id="fCatatan" type="text" placeholder="mis. keperluan pribadi"></div>
+      <p class="hint" style="margin:0 0 4px;">Saldo akan langsung terpotong; uang tunai diserahkan ke anggota secara manual.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-danger" onclick="prosesTarikTunai('${id}')">Tarik Tunai</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fNominal');
+  setTimeout(()=>document.getElementById('fNominal').focus(),50);
+}
+function prosesTarikTunai(id){
+  const a = state.anggota.find(x=>x.id===id); if(!a) return;
+  const nominal = angkaSaja(document.getElementById('fNominal').value);
+  if(!nominal || nominal<=0){ toast('Nominal tidak valid'); return; }
+  if(nominal > a.saldo){ toast('Saldo tidak cukup untuk tarik tunai sebesar itu'); return; }
+  const catatan = document.getElementById('fCatatan').value.trim();
+  a.saldo -= nominal;
+  state.transaksi.push({
+    id: uid('trx'), tipe:'tarik', tanggal: new Date().toISOString(),
+    anggotaId: a.id, anggotaNama: a.nama, items:[], total: nominal,
+    metode:'tarik', catatan
+  });
+  saveDB(); closeModal(); toast(`Tarik tunai ${rupiah(nominal)} berhasil — serahkan uang tunai ke anggota`); renderPage('anggota');
+}
+
+/* ============ PRODUK ============ */
+pages.produk = function(){
+  return `
+    <h1 class="page-title">Produk</h1>
+    <p class="page-sub">Kelola daftar barang warung, harga, dan stok</p>
+    <div class="row-between">
+      <input type="text" class="search" id="cariProduk" placeholder="Cari produk...">
+      <button class="btn btn-primary" id="btnTambahProduk">+ Tambah Produk</button>
+    </div>
+    <div class="cards" id="produkTotalCards"></div>
+    <div class="panel"><div class="panel-body" id="tabelProdukWrap"></div></div>
+  `;
+};
+function renderTabelProduk(filter){
+  filter = (filter||'').toLowerCase();
+  const list = state.produk.filter(p => p.nama.toLowerCase().includes(filter) || (p.barcode||'').toLowerCase().includes(filter));
+  const totalCardsWrap = document.getElementById('produkTotalCards');
+  if(totalCardsWrap){
+    // Nilai stok dihitung dari SEMUA produk (tidak terpengaruh pencarian), supaya total selalu menggambarkan keseluruhan warung.
+    const totalModal = state.produk.reduce((s,p)=>s+(p.hargaBeli||0)*p.stok,0);
+    const totalNilaiJual = state.produk.reduce((s,p)=>s+(p.harga||0)*p.stok,0);
+    const totalStokUnit = state.produk.reduce((s,p)=>s+p.stok,0);
+    totalCardsWrap.innerHTML = `
+      <div class="card"><div class="label">Total Modal Stok (Harga Beli)</div><div class="value">${rupiah(totalModal)}</div></div>
+      <div class="card"><div class="label">Total Nilai Jual Stok (Harga Jual)</div><div class="value">${rupiah(totalNilaiJual)}</div></div>
+      <div class="card accent"><div class="label">Potensi Laba Stok</div><div class="value">${rupiah(totalNilaiJual-totalModal)}</div></div>
+      <div class="card"><div class="label">Total Stok (unit)</div><div class="value">${totalStokUnit.toLocaleString('id-ID')}</div></div>
+    `;
+  }
+  const wrap = document.getElementById('tabelProdukWrap');
+  if(!wrap) return;
+  if(!list.length){ wrap.innerHTML = `<div class="empty">Belum ada produk. Klik "Tambah Produk" untuk mulai.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Produk</th><th>Kategori</th><th>Barcode</th><th class="num">Beli</th><th class="num">Jual</th><th class="num">Stok</th><th></th></tr></thead><tbody>
+    ${list.map(p=>`<tr>
+      <td>${p.nama}</td>
+      <td>${p.kategori||'-'}</td>
+      <td class="mono">${p.barcode||'-'}</td>
+      <td class="num">${rupiah(p.hargaBeli||0)}</td>
+      <td class="num">${rupiah(p.harga)}</td>
+      <td class="num">${p.stok<=5?`<span class="tag low">${p.stok}</span>`:p.stok}</td>
+      <td style="text-align:right;white-space:nowrap;">
+        <button class="btn btn-sm btn-accent" onclick="openRestock('${p.id}')">+Stok</button>
+        <button class="btn btn-sm" onclick="openEditProduk('${p.id}')">Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="hapusProduk('${p.id}')">Hapus</button>
+      </td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+function openRestock(id){
+  const p = state.produk.find(x=>x.id===id); if(!p) return;
+  openModal(`
+    <div class="modal-head">Restock: ${p.nama}</div>
+    <div class="modal-body">
+      <p style="margin-top:0;color:var(--muted);font-size:13.5px;">Stok saat ini: <strong>${p.stok}</strong></p>
+      <div class="field"><label>Jumlah Tambahan Stok</label><input id="fTambahStok" type="number" min="1" placeholder="mis. 24"></div>
+      <div class="field"><label>Harga Beli Baru (opsional)</label><input id="fHargaBeliBaru" type="text" inputmode="numeric" placeholder="Kosongkan bila sama seperti sebelumnya (${rupiah(p.hargaBeli||0)})"></div>
+      <p class="hint" style="margin:0 0 4px;">Jumlah ini akan DITAMBAHKAN ke stok yang ada, bukan menggantinya.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-accent" onclick="prosesRestock('${id}')">Tambah Stok</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fHargaBeliBaru');
+  setTimeout(()=>document.getElementById('fTambahStok').focus(),50);
+}
+function prosesRestock(id){
+  const p = state.produk.find(x=>x.id===id); if(!p) return;
+  const tambah = parseInt(document.getElementById('fTambahStok').value);
+  if(!tambah || tambah<=0){ toast('Jumlah tambahan stok tidak valid'); return; }
+  const hbRaw = document.getElementById('fHargaBeliBaru').value.trim();
+  const stokLama = p.stok;
+  p.stok += tambah;
+  if(hbRaw !== ''){
+    const hb = angkaSaja(hbRaw);
+    if(hb >= 0) p.hargaBeli = hb;
+  }
+  saveDB();
+  closeModal();
+  toast(`Stok "${p.nama}" bertambah ${tambah} (${stokLama} → ${p.stok})`);
+  renderPage('produk');
+}
+function openTambahProduk(){
+  openModal(`
+    <div class="modal-head">Tambah Produk</div>
+    <div class="modal-body">
+      <div class="field"><label>Nama Produk</label><input id="fNama" type="text" placeholder="mis. Indomie Goreng"></div>
+      ${renderKategoriField('')}
+      <div class="field">
+        <label>Kode Barcode</label>
+        <div class="input-row">
+          <input id="fBarcode" type="text" placeholder="Scan atau ketik manual">
+          <button type="button" class="btn" onclick="scanBarcodeProduk()">📷 Scan</button>
+        </div>
+        <p style="margin:6px 0 0;font-size:12px;color:var(--muted);">Scan barcode kemasan — nama & kategori akan coba terisi otomatis bila ditemukan.</p>
+      </div>
+      <div class="field"><label>Harga Beli (modal)</label><input id="fHargaBeli" type="text" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Harga Jual (Ecer/Satuan)</label><input id="fHarga" type="text" inputmode="numeric" placeholder="0"></div>
+      <div class="field"><label>Stok Awal (dalam pcs/satuan terkecil)</label><input id="fStok" type="number" min="0" placeholder="0"></div>
+      <details style="margin:2px 0 14px;">
+        <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-dark);">+ Harga Grosir & Satuan Besar (opsional)</summary>
+        <div style="margin-top:10px;">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Harga grosir aktif otomatis kalau beli mencapai jumlah minimal (misal beli ≥3 pcs). Satuan besar (Dus/Karton) dijual sebagai unit terpisah di kasir.</p>
+          <div class="field"><label>Harga Grosir (per pcs)</label><input id="fHargaGrosir" type="text" inputmode="numeric" placeholder="Kosongkan jika tidak ada"></div>
+          <div class="field"><label>Minimal Qty buat Harga Grosir</label><input id="fQtyGrosir" type="number" min="2" placeholder="mis. 3"></div>
+          <div class="field"><label>Nama Satuan Besar</label><input id="fNamaSatuanBesar" type="text" placeholder="mis. Dus / Karton"></div>
+          <div class="field"><label>Isi per Satuan Besar (pcs)</label><input id="fIsiSatuanBesar" type="number" min="2" placeholder="mis. 48"></div>
+          <div class="field"><label>Harga per Satuan Besar</label><input id="fHargaSatuanBesar" type="text" inputmode="numeric" placeholder="mis. 45000"></div>
+        </div>
+      </details>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="simpanProduk()">Simpan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fHargaBeli');
+  attachFormatRibuan('fHarga');
+  attachFormatRibuan('fHargaGrosir');
+  attachFormatRibuan('fHargaSatuanBesar');
+  setTimeout(()=>document.getElementById('fNama').focus(),50);
+}
+function simpanProduk(){
+  const nama = document.getElementById('fNama').value.trim();
+  const kategori = getKategoriValue();
+  const barcode = document.getElementById('fBarcode').value.trim();
+  const hargaBeli = angkaSaja(document.getElementById('fHargaBeli').value);
+  const harga = angkaSaja(document.getElementById('fHarga').value);
+  const stok = parseInt(document.getElementById('fStok').value) || 0;
+  const hargaGrosir = angkaSaja(document.getElementById('fHargaGrosir').value);
+  const qtyGrosir = parseInt(document.getElementById('fQtyGrosir').value) || 0;
+  const namaSatuanBesar = document.getElementById('fNamaSatuanBesar').value.trim();
+  const isiSatuanBesar = parseInt(document.getElementById('fIsiSatuanBesar').value) || 0;
+  const hargaSatuanBesar = angkaSaja(document.getElementById('fHargaSatuanBesar').value);
+  if(!nama){ toast('Nama produk wajib diisi'); return; }
+  if(barcode && state.produk.some(p=>p.barcode===barcode)){ toast('Kode barcode sudah dipakai produk lain'); return; }
+  state.produk.push({ id: uid('prd'), nama, kategori, barcode, hargaBeli, harga, stok, hargaGrosir, qtyGrosir, namaSatuanBesar, isiSatuanBesar, hargaSatuanBesar });
+  if(barcode) state.riwayatBarcode[barcode] = { nama, kategori };
+  saveDB(); closeModal(); toast('Produk ditambahkan'); renderPage('produk');
+}
+function openEditProduk(id){
+  const p = state.produk.find(x=>x.id===id); if(!p) return;
+  openModal(`
+    <div class="modal-head">Edit Produk</div>
+    <div class="modal-body">
+      <div class="field"><label>Nama Produk</label><input id="fNama" type="text" value="${p.nama}"></div>
+      ${renderKategoriField(p.kategori||'')}
+      <div class="field">
+        <label>Kode Barcode</label>
+        <div class="input-row">
+          <input id="fBarcode" type="text" value="${p.barcode||''}" placeholder="Scan atau ketik manual">
+          <button type="button" class="btn" onclick="scanBarcodeProduk()">📷 Scan</button>
+        </div>
+      </div>
+      <div class="field"><label>Harga Beli (modal)</label><input id="fHargaBeli" type="text" inputmode="numeric" value="${p.hargaBeli||0}"></div>
+      <div class="field"><label>Harga Jual (Ecer/Satuan)</label><input id="fHarga" type="text" inputmode="numeric" value="${p.harga}"></div>
+      <div class="field"><label>Stok (dalam pcs/satuan terkecil)</label><input id="fStok" type="number" value="${p.stok}"></div>
+      <details style="margin:2px 0 14px;" ${(p.hargaGrosir||p.namaSatuanBesar)?'open':''}>
+        <summary style="cursor:pointer;font-size:12.5px;font-weight:600;color:var(--primary-dark);">+ Harga Grosir & Satuan Besar (opsional)</summary>
+        <div style="margin-top:10px;">
+          <p style="font-size:12px;color:var(--muted);margin:0 0 8px;">Harga grosir aktif otomatis kalau beli mencapai jumlah minimal (misal beli ≥3 pcs). Satuan besar (Dus/Karton) dijual sebagai unit terpisah di kasir.</p>
+          <div class="field"><label>Harga Grosir (per pcs)</label><input id="fHargaGrosir" type="text" inputmode="numeric" value="${p.hargaGrosir||''}" placeholder="Kosongkan jika tidak ada"></div>
+          <div class="field"><label>Minimal Qty buat Harga Grosir</label><input id="fQtyGrosir" type="number" min="2" value="${p.qtyGrosir||''}" placeholder="mis. 3"></div>
+          <div class="field"><label>Nama Satuan Besar</label><input id="fNamaSatuanBesar" type="text" value="${p.namaSatuanBesar||''}" placeholder="mis. Dus / Karton"></div>
+          <div class="field"><label>Isi per Satuan Besar (pcs)</label><input id="fIsiSatuanBesar" type="number" min="2" value="${p.isiSatuanBesar||''}" placeholder="mis. 48"></div>
+          <div class="field"><label>Harga per Satuan Besar</label><input id="fHargaSatuanBesar" type="text" inputmode="numeric" value="${p.hargaSatuanBesar||''}" placeholder="mis. 45000"></div>
+        </div>
+      </details>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="updateProduk('${id}')">Simpan Perubahan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fHargaBeli');
+  attachFormatRibuan('fHarga');
+  attachFormatRibuan('fHargaGrosir');
+  attachFormatRibuan('fHargaSatuanBesar');
+}
+function updateProduk(id){
+  const p = state.produk.find(x=>x.id===id); if(!p) return;
+  const barcode = document.getElementById('fBarcode').value.trim();
+  if(barcode && state.produk.some(x=>x.barcode===barcode && x.id!==id)){ toast('Kode barcode sudah dipakai produk lain'); return; }
+  p.nama = document.getElementById('fNama').value.trim() || p.nama;
+  p.kategori = getKategoriValue();
+  p.barcode = barcode;
+  if(barcode) state.riwayatBarcode[barcode] = { nama: p.nama, kategori: p.kategori };
+  p.hargaBeli = angkaSaja(document.getElementById('fHargaBeli').value);
+  p.harga = angkaSaja(document.getElementById('fHarga').value);
+  p.stok = parseInt(document.getElementById('fStok').value) || 0;
+  p.hargaGrosir = angkaSaja(document.getElementById('fHargaGrosir').value);
+  p.qtyGrosir = parseInt(document.getElementById('fQtyGrosir').value) || 0;
+  p.namaSatuanBesar = document.getElementById('fNamaSatuanBesar').value.trim();
+  p.isiSatuanBesar = parseInt(document.getElementById('fIsiSatuanBesar').value) || 0;
+  p.hargaSatuanBesar = angkaSaja(document.getElementById('fHargaSatuanBesar').value);
+  saveDB(); closeModal(); toast('Perubahan disimpan'); renderPage('produk');
+}
+function hapusProduk(id){
+  const p = state.produk.find(x=>x.id===id); if(!p) return;
+  if(!confirm(`Hapus produk "${p.nama}"?`)) return;
+  state.produk = state.produk.filter(x=>x.id!==id);
+  saveDB(); toast('Produk dihapus'); renderPage('produk');
+}
+
+/* ============ KATEGORI PRODUK: tombol pilihan (chip), tanpa perlu ketik manual ============ */
+const KATEGORI_PRESET = ['Makanan','Minuman','Kosmetik','Perlengkapan Mandi','ATK','Aksesoris'];
+
+function renderKategoriField(selected){
+  const sel = (selected||'').trim();
+  const cocok = KATEGORI_PRESET.find(o=>o.toLowerCase()===sel.toLowerCase());
+  const chipsHtml = KATEGORI_PRESET.map(o=>`<button type="button" class="chip-kategori ${cocok && o===cocok ? 'active':''}" data-val="${o}" onclick="pilihKategoriChip(this,'${o.replace(/'/g,"\\'")}')">${o}</button>`).join('')
+    + `<button type="button" class="chip-kategori ${sel && !cocok ? 'active':''}" data-val="__custom__" onclick="pilihKategoriChip(this,'__custom__')">Lainnya</button>`;
+  return `
+  <div class="field">
+    <label>Kategori</label>
+    <div class="kategori-chips" id="kategoriChips">${chipsHtml}</div>
+    <input type="hidden" id="fKategori" value="${cocok ? cocok : (sel ? sel.replace(/"/g,'&quot;') : '')}">
+    <input id="fKategoriLain" type="text" placeholder="Tulis nama kategori" oninput="document.getElementById('fKategori').value=this.value.trim()" style="margin-top:8px;${(sel && !cocok) ? '' : 'display:none;'}" value="${(sel && !cocok) ? sel.replace(/"/g,'&quot;') : ''}">
+  </div>`;
+}
+function pilihKategoriChip(btnEl, val){
+  const wrap = document.getElementById('kategoriChips');
+  const hidden = document.getElementById('fKategori');
+  const lain = document.getElementById('fKategoriLain');
+  if(!wrap || !hidden) return;
+  wrap.querySelectorAll('.chip-kategori').forEach(b=>b.classList.remove('active'));
+  btnEl.classList.add('active');
+  if(val === '__custom__'){
+    hidden.value = lain ? lain.value.trim() : '';
+    if(lain){ lain.style.display = 'block'; lain.value=''; lain.focus(); hidden.value=''; }
+  } else {
+    hidden.value = val;
+    if(lain){ lain.style.display = 'none'; lain.value = ''; }
+  }
+}
+function getKategoriValue(){
+  const hidden = document.getElementById('fKategori');
+  return hidden ? hidden.value.trim() : '';
+}
+function setKategoriValue(nilai){
+  const val = (nilai||'').trim();
+  const wrap = document.getElementById('kategoriChips');
+  const hidden = document.getElementById('fKategori');
+  const lain = document.getElementById('fKategoriLain');
+  if(!wrap || !hidden || !val) return;
+  wrap.querySelectorAll('.chip-kategori').forEach(b=>b.classList.remove('active'));
+  const preset = KATEGORI_PRESET.find(k=>k.toLowerCase()===val.toLowerCase());
+  if(preset){
+    const btn = wrap.querySelector(`.chip-kategori[data-val="${preset}"]`);
+    if(btn) btn.classList.add('active');
+    hidden.value = preset;
+    if(lain){ lain.style.display = 'none'; lain.value = ''; }
+  } else {
+    const btn = wrap.querySelector('.chip-kategori[data-val="__custom__"]');
+    if(btn) btn.classList.add('active');
+    hidden.value = val;
+    if(lain){ lain.style.display = 'block'; lain.value = val; }
+  }
+}
+
+/* ============ SCAN BARCODE UNTUK FORM PRODUK: auto-isi nama & kategori ============ */
+// Menebak kategori preset dari teks (nama/kategori hasil lookup online), berbasis kata kunci umum warung
+function tebakKategoriDariTeks(teks){
+  const t = (teks||'').toLowerCase();
+  const mapping = [
+    { kategori:'Minuman', kw:['minuman','drink','beverage','juice','jus','kopi','coffee','teh ','teh,','the ','soda','susu','milk','air mineral','mineral water',' water','sirup','sirop'] },
+    { kategori:'Perlengkapan Mandi', kw:['sabun','soap','shampo','shampoo','sampo','pasta gigi','toothpaste','sikat gigi','odol','deterjen','hair care','conditioner','pembersih lantai','pewangi'] },
+    { kategori:'Kosmetik', kw:['kosmetik','cosmetic','makeup','make up','lipstik','bedak','skincare','perawatan wajah','parfum','wangi','lotion','handbody'] },
+    { kategori:'ATK', kw:['pulpen','pensil','ballpoint','buku tulis','stationery','stationary','alat tulis','penggaris','penghapus'] },
+    { kategori:'Aksesoris', kw:['aksesoris','accessory','gelang','kalung','anting','jam tangan','case hp','aksesori'] },
+    { kategori:'Makanan', kw:['makanan','food','snack','biscuit','biskuit','mie','noodle','chip','keripik','permen','candy','coklat','chocolate','roti','bread','bumbu','saus','sauce','beras','rice','kerupuk','kue'] },
+  ];
+  for(const m of mapping){
+    if(m.kw.some(k=>t.includes(k))) return m.kategori;
+  }
+  return '';
+}
+async function lookupProdukBarcode(barcode){
+  try{
+    const res = await fetch(`https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json?fields=product_name,brands,categories`);
+    if(!res.ok) return null;
+    const data = await res.json();
+    if(data.status !== 1 || !data.product) return null;
+    const p = data.product;
+    let nama = (p.product_name || '').trim();
+    if(!nama && p.brands) nama = p.brands.split(',')[0].trim();
+    if(!nama) return null;
+    let kategoriMentah = '';
+    if(p.categories){
+      const first = p.categories.split(',')[0].trim();
+      kategoriMentah = first.replace(/^[a-z]{2}:/i,'');
+    }
+    const kategori = tebakKategoriDariTeks(kategoriMentah + ' ' + nama) || kategoriMentah;
+    return { nama, kategori };
+  }catch(e){
+    return null; // offline atau API tidak terjangkau — biarkan diisi manual
+  }
+}
+function scanBarcodeProduk(){
+  openCameraScan(async (kode)=>{
+    const barcodeEl = document.getElementById('fBarcode');
+    if(barcodeEl) barcodeEl.value = kode;
+    const existing = state.produk.find(p=>p.barcode===kode);
+    if(existing){
+      toast(`Barcode ini sudah dipakai produk "${existing.nama}"`);
+      return;
+    }
+    // Kode barcode langsung tersimpan di kolom, apa pun hasil pencarian berikutnya
+    toast(`Kode barcode tersimpan: ${kode}`);
+    const namaEl = document.getElementById('fNama');
+
+    // 1) Cek dulu riwayat lokal di HP ini (pernah diisi manual sebelumnya) — jalan tanpa internet
+    const cache = state.riwayatBarcode[kode];
+    if(cache){
+      if(namaEl && !namaEl.value.trim()) namaEl.value = cache.nama;
+      if(cache.kategori && !getKategoriValue()) setKategoriValue(cache.kategori);
+      toast(`Terisi otomatis dari riwayat: ${cache.nama}`);
+      return;
+    }
+
+    // 2) Kalau belum ada di riwayat lokal, coba cari online (opsional, tidak wajib berhasil)
+    const info = await lookupProdukBarcode(kode);
+    if(info){
+      if(namaEl && !namaEl.value.trim()) namaEl.value = info.nama;
+      if(info.kategori && !getKategoriValue()) setKategoriValue(info.kategori);
+      toast(`Terisi otomatis: ${info.nama}`);
+    } else if(namaEl && !namaEl.value.trim()){
+      // Info produk tidak ditemukan — tidak masalah, barcode sudah aman tersimpan.
+      // Fokuskan ke nama agar tinggal diketik manual sekali saja; scan berikutnya untuk barcode yang sama akan otomatis terisi.
+      setTimeout(()=>namaEl.focus(),50);
+    }
+  });
+}
+
+/* ============ KASIR (POS) ============ */
+let cart = [];
+let kasirAnggotaId = null;
+let statusBayarKasir = 'lunas';
+
+pages.kasir = function(){
+  cart = []; kasirAnggotaId = null; statusBayarKasir = 'lunas';
+  return `
+    <h1 class="page-title">Kasir</h1>
+    <p class="page-sub">Scan barcode produk/anggota, atau pilih manual — lalu proses pembayaran</p>
+    <div class="kasir-wrap">
+      <div>
+        <div class="input-row" style="margin-bottom:14px;">
+          <input type="text" class="search" style="width:100%;" id="cariProdukKasir" placeholder="Cari / scan barcode produk...">
+          <button class="btn btn-accent" id="btnScanProduk">📷 Scan</button>
+        </div>
+        <div class="produk-grid" id="produkGrid"></div>
+      </div>
+      <div class="cart">
+        <div class="field anggota-select-search">
+          <label>Pembeli</label>
+          <div class="input-row">
+            <input type="text" id="cariPembeli" placeholder="Cari nama / scan kartu anggota" autocomplete="off">
+            <button class="btn btn-accent" id="btnScanAnggota">📷</button>
+          </div>
+          <div class="dropdown-list" id="pembeliDropdown"></div>
+        </div>
+        <div id="pembeliInfo"></div>
+        <div id="cartItems"><div class="empty" style="padding:20px 0;">Keranjang kosong</div></div>
+        <div class="cart-total"><span>Total</span><span id="cartTotal">Rp0</span></div>
+        <div id="bayarBlok">
+          <div class="field" style="margin-top:8px;">
+            <label>Status Pembayaran</label>
+            <div class="kategori-chips">
+              <button type="button" class="chip-kategori active" id="chipLunas" onclick="pilihStatusBayar('lunas')">Lunas</button>
+              <button type="button" class="chip-kategori" id="chipBelumBayar" onclick="pilihStatusBayar('belum_bayar')">Belum Bayar (Hutang)</button>
+            </div>
+          </div>
+          <div id="blokLunas">
+            <div class="field" style="margin-top:8px;"><label>Bayar</label><input id="fBayar" type="text" inputmode="numeric" placeholder="0"></div>
+            <div class="cart-total" style="font-size:13.5px;"><span>Sisa / Kembali</span><span id="cartSisa">Rp0</span></div>
+          </div>
+          <div id="blokHutang" style="display:none;">
+            <div class="field" style="margin-top:8px;">
+              <label>Nama Pembeli (bukti hutang)</label>
+              <input id="fNamaHutang" type="text" placeholder="Nama pembeli yang berhutang">
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-accent" style="width:100%;padding:11px;font-size:14.5px;" id="btnProses" disabled>Proses Transaksi</button>
+      </div>
+    </div>
+  `;
+};
+function renderProdukGrid(filter){
+  filter = (filter||'').toLowerCase();
+  const grid = document.getElementById('produkGrid');
+  if(!grid) return;
+  const list = state.produk.filter(p=>p.nama.toLowerCase().includes(filter));
+  if(!list.length){ grid.innerHTML = `<div class="empty">Tidak ada produk.</div>`; return; }
+  grid.innerHTML = list.map(p=>`
+    <button class="produk-card" ${p.stok<=0?'disabled':''} onclick="tambahKeKeranjang('${p.id}','pcs')">
+      <div class="nm">${p.nama}</div>
+      <div class="hg">${rupiah(p.harga)}${p.hargaGrosir && p.qtyGrosir ? `<br><span style="font-size:10.5px;color:var(--muted);font-weight:400;">Grosir ${rupiah(p.hargaGrosir)} (≥${p.qtyGrosir})</span>` : ''}</div>
+      <div class="st">Stok: ${p.stok}</div>
+      ${p.namaSatuanBesar && p.isiSatuanBesar>0 && p.hargaSatuanBesar>0 ? `<div class="btn btn-sm" style="margin-top:4px;" onclick="event.stopPropagation();tambahKeKeranjang('${p.id}','besar')">+1 ${p.namaSatuanBesar} (${rupiah(p.hargaSatuanBesar)})</div>` : ''}
+    </button>
+  `).join('');
+}
+// Harga efektif per pcs: otomatis pakai harga grosir kalau qty sudah mencapai ambang minimal.
+function hargaEfektifPcs(p, qty){
+  if(p.hargaGrosir>0 && p.qtyGrosir>0 && qty>=p.qtyGrosir) return p.hargaGrosir;
+  return p.harga;
+}
+// Total pcs yang sudah dipakai di keranjang untuk 1 produk, dijumlahkan dari SEMUA baris (satuan pcs maupun satuan besar).
+function totalPcsDipakaiDiKeranjang(produkId){
+  return cart.filter(c=>c.produkId===produkId).reduce((s,c)=>s+c.qty*c.pcsPerSatuan,0);
+}
+function tambahKeKeranjang(produkId, satuan){
+  satuan = satuan || 'pcs';
+  const p = state.produk.find(x=>x.id===produkId); if(!p) return;
+  const pcsPerSatuan = satuan==='besar' ? (p.isiSatuanBesar||1) : 1;
+  const key = produkId + (satuan==='besar' ? '__besar' : '');
+  const existing = cart.find(c=>c.key===key);
+  const pcsDipakaiSekarang = totalPcsDipakaiDiKeranjang(produkId);
+  if(pcsDipakaiSekarang + pcsPerSatuan > p.stok){ toast('Stok tidak cukup'); return; }
+  if(existing){ existing.qty++; }
+  else {
+    cart.push({ key, produkId: p.id, nama: p.nama, satuan, satuanLabel: satuan==='besar' ? p.namaSatuanBesar : '', pcsPerSatuan, qty: 1, harga: satuan==='besar' ? p.hargaSatuanBesar : p.harga, hargaBeli: (p.hargaBeli||0)*pcsPerSatuan });
+  }
+  renderCart();
+  focusScanKasir();
+}
+function focusScanKasir(){
+  const el = document.getElementById('cariProdukKasir');
+  if(el) el.focus();
+}
+function tambahViaBarcode(kode){
+  kode = (kode||'').trim();
+  const p = state.produk.find(x=>x.barcode && x.barcode===kode);
+  if(p){ tambahKeKeranjang(p.id,'pcs'); toast(`Ditambahkan: ${p.nama}`); return; }
+  const a = state.anggota.find(x=>x.nomorInduk && x.nomorInduk===kode.toUpperCase());
+  if(a){ pilihPembeli(a.id); toast(`Pembeli: ${a.nama} · Saldo ${rupiah(a.saldo)}`); return; }
+  toast('Barcode tidak dikenali (bukan produk atau anggota)');
+}
+function ubahQty(key, delta){
+  const item = cart.find(c=>c.key===key); if(!item) return;
+  const p = state.produk.find(x=>x.id===item.produkId);
+  const newQty = item.qty + delta;
+  if(newQty <= 0){ cart = cart.filter(c=>c.key!==key); renderCart(); return; }
+  if(p){
+    const pcsDipakaiLain = totalPcsDipakaiDiKeranjang(item.produkId) - item.qty*item.pcsPerSatuan;
+    if(pcsDipakaiLain + newQty*item.pcsPerSatuan > p.stok){ toast('Stok tidak cukup'); return; }
+  }
+  item.qty = newQty;
+  if(p && item.satuan==='pcs') item.harga = hargaEfektifPcs(p, item.qty);
+  renderCart();
+}
+function setQty(key, value){
+  const item = cart.find(c=>c.key===key); if(!item) return;
+  const p = state.produk.find(x=>x.id===item.produkId);
+  let newQty = parseInt(String(value).replace(/[^0-9]/g,''), 10);
+  if(!newQty || newQty <= 0){ cart = cart.filter(c=>c.key!==key); renderCart(); return; }
+  if(p){
+    const pcsDipakaiLain = totalPcsDipakaiDiKeranjang(item.produkId) - item.qty*item.pcsPerSatuan;
+    const maksSatuan = Math.floor((p.stok - pcsDipakaiLain) / item.pcsPerSatuan);
+    if(newQty > maksSatuan){ toast('Stok tidak cukup, maksimal ' + maksSatuan); newQty = maksSatuan; }
+  }
+  if(newQty <= 0){ cart = cart.filter(c=>c.key!==key); renderCart(); return; }
+  item.qty = newQty;
+  if(p && item.satuan==='pcs') item.harga = hargaEfektifPcs(p, item.qty);
+  renderCart();
+}
+function renderCart(){
+  const wrap = document.getElementById('cartItems');
+  const totalEl = document.getElementById('cartTotal');
+  const btn = document.getElementById('btnProses');
+  if(!wrap) return;
+  if(!cart.length){
+    wrap.innerHTML = `<div class="empty" style="padding:20px 0;">Keranjang kosong</div>`;
+  } else {
+    wrap.innerHTML = cart.map(c=>{
+      const p = state.produk.find(x=>x.id===c.produkId);
+      const isGrosirAktif = c.satuan==='pcs' && p && p.hargaGrosir>0 && p.qtyGrosir>0 && c.qty>=p.qtyGrosir;
+      const satuanTxt = c.satuan==='besar' ? (c.satuanLabel||'satuan besar') : 'pcs';
+      return `
+      <div class="cart-item">
+        <div class="nm">${c.nama}${isGrosirAktif?' <span class="tag" style="background:var(--success);color:#fff;">Grosir</span>':''}<br><span style="color:var(--muted);font-size:11.5px;">${rupiah(c.harga)} / ${satuanTxt}</span></div>
+        <div class="qty-ctrl">
+          <button onclick="ubahQty('${c.key}',-1)">−</button>
+          <input type="text" inputmode="numeric" value="${c.qty}" onfocus="this.select()" onchange="setQty('${c.key}', this.value)" onkeydown="if(event.key==='Enter') this.blur()">
+          <button onclick="ubahQty('${c.key}',1)">+</button>
+        </div>
+      </div>
+    `;}).join('');
+  }
+  const total = cart.reduce((s,c)=>s+c.harga*c.qty,0);
+  totalEl.textContent = rupiah(total);
+  btn.disabled = cart.length===0;
+  updateSisaKasir();
+}
+function pilihPembeli(id){
+  kasirAnggotaId = id;
+  const info = document.getElementById('pembeliInfo');
+  document.getElementById('pembeliDropdown').classList.remove('show');
+  const bayarBlok = document.getElementById('bayarBlok');
+  if(!id){
+    document.getElementById('cariPembeli').value = '';
+    info.innerHTML = `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 12px;">Mode: <strong>Umum / Tunai</strong></p>`;
+    if(bayarBlok) bayarBlok.style.display = '';
+    pilihStatusBayar('lunas');
+    updateSisaKasir();
+    return;
+  }
+  const a = state.anggota.find(x=>x.id===id);
+  document.getElementById('cariPembeli').value = a.nama;
+  info.innerHTML = `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 12px;">Saldo: <strong style="color:var(--primary-dark)">${rupiah(a.saldo)}</strong></p>`;
+  if(bayarBlok) bayarBlok.style.display = 'none';
+}
+function pilihStatusBayar(status){
+  statusBayarKasir = status;
+  const chipLunas = document.getElementById('chipLunas');
+  const chipBelumBayar = document.getElementById('chipBelumBayar');
+  const blokLunas = document.getElementById('blokLunas');
+  const blokHutang = document.getElementById('blokHutang');
+  if(!chipLunas || !chipBelumBayar) return;
+  chipLunas.classList.toggle('active', status==='lunas');
+  chipBelumBayar.classList.toggle('active', status==='belum_bayar');
+  if(blokLunas) blokLunas.style.display = status==='lunas' ? '' : 'none';
+  if(blokHutang) blokHutang.style.display = status==='belum_bayar' ? '' : 'none';
+  updateSisaKasir();
+}
+function updateSisaKasir(){
+  const sisaEl = document.getElementById('cartSisa');
+  const bayarEl = document.getElementById('fBayar');
+  if(!sisaEl || !bayarEl) return;
+  const total = cart.reduce((s,c)=>s+c.harga*c.qty,0);
+  const bayar = angkaSaja(bayarEl.value);
+  const sisa = bayar - total;
+  if(!bayarEl.value){ sisaEl.textContent = 'Rp0'; sisaEl.style.color = ''; return; }
+  if(sisa < 0){
+    sisaEl.textContent = `Kurang ${rupiah(Math.abs(sisa))}`;
+    sisaEl.style.color = 'var(--danger)';
+  } else {
+    sisaEl.textContent = rupiah(sisa);
+    sisaEl.style.color = 'var(--success)';
+  }
+}
+function prosesTransaksi(){
+  if(!cart.length) return;
+  const total = cart.reduce((s,c)=>s+c.harga*c.qty,0);
+  let anggota = null;
+  let metode = 'tunai';
+  let statusBayar = 'lunas';
+  let bayar = total;
+  let kembalian = 0;
+  let namaPembeliHutang = null;
+  if(kasirAnggotaId){
+    anggota = state.anggota.find(x=>x.id===kasirAnggotaId);
+    if(!anggota){ toast('Anggota tidak ditemukan'); return; }
+    if(anggota.saldo < total){ toast('Saldo anggota tidak cukup, gunakan tunai atau top up dulu'); return; }
+    metode = 'saldo';
+    bayar = total; kembalian = 0;
+  } else if(statusBayarKasir === 'belum_bayar'){
+    namaPembeliHutang = (document.getElementById('fNamaHutang')?.value || '').trim();
+    if(!namaPembeliHutang){ toast('Isi nama pembeli sebagai bukti hutang'); return; }
+    metode = 'hutang';
+    statusBayar = 'belum_bayar';
+    bayar = 0; kembalian = 0;
+  } else {
+    bayar = angkaSaja(document.getElementById('fBayar')?.value);
+    if(bayar < total){ toast('Jumlah bayar kurang dari total belanja'); return; }
+    kembalian = bayar - total;
+  }
+  // validasi stok final (jumlahkan semua baris keranjang per produk, dalam pcs)
+  const pcsDipakai = {};
+  cart.forEach(c=>{ pcsDipakai[c.produkId] = (pcsDipakai[c.produkId]||0) + c.qty*c.pcsPerSatuan; });
+  for(const produkId in pcsDipakai){
+    const p = state.produk.find(x=>x.id===produkId);
+    const namaCek = cart.find(c=>c.produkId===produkId)?.nama || '';
+    if(!p || p.stok < pcsDipakai[produkId]){ toast(`Stok "${namaCek}" tidak cukup`); return; }
+  }
+  // commit
+  cart.forEach(c=>{
+    const p = state.produk.find(x=>x.id===c.produkId);
+    p.stok -= c.qty*c.pcsPerSatuan;
+  });
+  if(anggota) anggota.saldo -= total;
+  const trx = {
+    id: uid('trx'), tipe:'jual', tanggal: new Date().toISOString(),
+    anggotaId: anggota?anggota.id:null,
+    anggotaNama: anggota ? anggota.nama : (namaPembeliHutang || null),
+    items: cart.map(c=>({produkId:c.produkId, nama:c.nama, harga:c.harga, hargaBeli:c.hargaBeli||0, qty:c.qty, satuanLabel:c.satuanLabel||'', pcsPerSatuan:c.pcsPerSatuan})),
+    total, metode, statusBayar, bayar, kembalian
+  };
+  state.transaksi.push(trx);
+  saveDB();
+  tampilkanStruk(trx);
+  cart = []; kasirAnggotaId = null; statusBayarKasir = 'lunas';
+}
+function tandaiLunasHutang(id){
+  const t = state.transaksi.find(x=>x.id===id);
+  if(!t || t.dibatalkan || t.metode!=='hutang' || t.statusBayar!=='belum_bayar') return;
+  if(!confirm(`Tandai hutang ${t.anggotaNama||'pembeli ini'} sebesar ${rupiah(t.total)} sebagai sudah lunas?`)) return;
+  t.statusBayar = 'lunas';
+  t.lunasPada = new Date().toISOString();
+  saveDB();
+  toast('Hutang ditandai lunas');
+  if(document.getElementById('tabelRiwayatWrap')) renderTabelRiwayat();
+  if(document.getElementById('labaCards')) renderLaporan();
+}
+function batalkanTransaksi(id){
+  const t = state.transaksi.find(x=>x.id===id);
+  if(!t || t.dibatalkan) return;
+  let pesan = 'Batalkan transaksi ini?';
+  if(t.tipe==='jual') pesan = `Batalkan transaksi penjualan ini? Stok produk akan dikembalikan${t.metode==='saldo' ? ` dan saldo ${t.anggotaNama||'anggota'} akan dikembalikan sebesar ${rupiah(t.total)}` : t.metode==='hutang' ? ` dan catatan hutang ${t.anggotaNama||'pembeli'} akan dihapus` : ''}.`;
+  else if(t.tipe==='topup') pesan = `Batalkan top up ini? Saldo ${t.anggotaNama||'anggota'} akan dikurangi ${rupiah(t.total)}.`;
+  else if(t.tipe==='tarik') pesan = `Batalkan tarik tunai ini? Saldo ${t.anggotaNama||'anggota'} akan ditambah kembali ${rupiah(t.total)}. Pastikan uang tunai yang sudah diserahkan diminta kembali dari anggota.`;
+  if(!confirm(pesan)) return;
+
+  let catatanGagal = [];
+  if(t.tipe==='jual'){
+    t.items.forEach(i=>{
+      const p = state.produk.find(x=>x.id===i.produkId);
+      if(p) p.stok += i.qty*(i.pcsPerSatuan||1);
+      else catatanGagal.push(`stok "${i.nama}" (produk sudah dihapus)`);
+    });
+    if(t.metode==='saldo' && t.anggotaId){
+      const a = state.anggota.find(x=>x.id===t.anggotaId);
+      if(a) a.saldo += t.total;
+      else catatanGagal.push(`saldo anggota (sudah dihapus)`);
+    }
+  } else if(t.tipe==='topup'){
+    const a = state.anggota.find(x=>x.id===t.anggotaId);
+    if(a) a.saldo -= t.total;
+    else catatanGagal.push(`saldo anggota (sudah dihapus)`);
+  } else if(t.tipe==='tarik'){
+    const a = state.anggota.find(x=>x.id===t.anggotaId);
+    if(a) a.saldo += t.total;
+    else catatanGagal.push(`saldo anggota (sudah dihapus)`);
+  }
+  t.dibatalkan = true;
+  t.dibatalkanPada = new Date().toISOString();
+  saveDB();
+  toast(catatanGagal.length ? `Transaksi dibatalkan. Tidak bisa memulihkan: ${catatanGagal.join(', ')}` : 'Transaksi dibatalkan');
+  renderTabelRiwayat();
+  const wrap = document.getElementById('tabelAnggotaWrap');
+  if(wrap) renderTabelAnggota(document.getElementById('cariAnggota')?.value||'');
+}
+function tampilkanStruk(trx){
+  openModal(`
+    <div class="modal-head">Struk Transaksi</div>
+    <div class="modal-body">
+      <div class="struk" id="strukPrint">
+        <div class="center"><strong>KASIR TOKO</strong><br>${new Date(trx.tanggal).toLocaleString('id-ID')}</div>
+        <hr>
+        ${trx.items.map(i=>`<div class="struk-row"><span>${i.nama} ${labelItemQty(i)}</span><span>${rupiah(i.harga*i.qty)}</span></div>`).join('')}
+        <hr>
+        <div class="struk-row"><strong>TOTAL</strong><strong>${rupiah(trx.total)}</strong></div>
+        ${trx.metode==='tunai' ? `
+        <div class="struk-row"><span>Bayar</span><span>${rupiah(trx.bayar||0)}</span></div>
+        <div class="struk-row"><span>Kembali</span><span>${rupiah(trx.kembalian||0)}</span></div>` : ''}
+        <div class="struk-row"><span>Pembeli</span><span>${trx.anggotaNama||'Umum'}</span></div>
+        <div class="struk-row"><span>Metode</span><span>${trx.metode==='saldo'?'Saldo':trx.metode==='hutang'?'Hutang':'Tunai'}</span></div>
+        ${trx.metode==='hutang' ? `<div class="struk-row"><span>Status</span><span style="color:var(--danger);font-weight:600;">Belum Dibayar (Hutang)</span></div>` : ''}
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="window.print()">🖨️ Cetak Resi</button>
+        <button class="btn" onclick="closeModal(); goPage('kasir');">Selesai</button>
+      </div>
+    </div>
+  `);
+}
+
+/* ============ RIWAYAT ============ */
+pages.riwayat = function(){
+  return `
+    <h1 class="page-title">Riwayat Transaksi</h1>
+    <p class="page-sub">Semua transaksi penjualan, top up, dan tarik tunai saldo</p>
+    <div class="row-between">
+      <div class="filters">
+        <input type="date" class="search" id="filterTanggal">
+        <select class="search" id="filterTipe">
+          <option value="">Semua tipe</option>
+          <option value="jual">Penjualan</option>
+          <option value="topup">Top Up</option>
+          <option value="tarik">Tarik Tunai</option>
+        </select>
+      </div>
+      <button class="btn btn-danger" id="btnHapusFilterRiwayat" style="display:none;">Reset Filter</button>
+    </div>
+    <div class="panel"><div class="panel-body" id="tabelRiwayatWrap"></div></div>
+  `;
+};
+function renderTabelRiwayat(){
+  const tgl = document.getElementById('filterTanggal')?.value;
+  const tipe = document.getElementById('filterTipe')?.value;
+  let list = [...state.transaksi].reverse();
+  if(tgl) list = list.filter(t=>tanggalLokal(new Date(t.tanggal))===tgl);
+  if(tipe) list = list.filter(t=>t.tipe===tipe);
+  const wrap = document.getElementById('tabelRiwayatWrap');
+  if(!wrap) return;
+  if(!list.length){ wrap.innerHTML = `<div class="empty">Tidak ada transaksi untuk filter ini.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Waktu</th><th>Anggota</th><th>Detail</th><th>Tipe</th><th class="num">Total</th><th></th></tr></thead><tbody>
+    ${list.map(t=>`<tr style="${t.dibatalkan?'opacity:.55;':''}">
+      <td>${new Date(t.tanggal).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${t.anggotaNama||'Umum'}</td>
+      <td style="color:var(--muted);font-size:12.5px;">${(t.tipe==='topup'||t.tipe==='tarik') ? (t.catatan||'-') : t.items.map(i=>`${i.nama} ${labelItemQty(i)}`).join(', ')}</td>
+      <td>${tagTipeTransaksi(t)}</td>
+      <td class="num">${rupiah(t.total)}</td>
+      <td style="text-align:right;white-space:nowrap;">${t.dibatalkan ? '' : `${(t.metode==='hutang' && t.statusBayar==='belum_bayar') ? `<button class="btn btn-sm btn-primary" onclick="tandaiLunasHutang('${t.id}')">Tandai Lunas</button> ` : ''}<button class="btn btn-sm btn-danger" onclick="batalkanTransaksi('${t.id}')">Batalkan</button>`}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+
+/* ============ KAS (ARUS KAS) ============
+   Prinsip: Saldo Kas mencerminkan UANG FISIK di laci, beda dengan Laba yang sifatnya di atas kertas.
+   - Beli stok TIDAK mengurangi laba (uang cuma pindah jadi barang), tapi TETAP mengurangi kas fisik.
+   - Biaya operasional (listrik/sewa/gaji) mengurangi kas DAN mengurangi laba bersih.
+   - Prive (ambil pribadi pemilik) mengurangi kas, tapi bukan kerugian usaha jadi tidak mengurangi laba.
+   Kas otomatis dari transaksi kasir (penjualan tunai, top up, tarik tunai, pelunasan hutang) dihitung
+   langsung dari state.transaksi — tidak disalin ke state.kasMutasi supaya tidak dobel catat.
+   state.kasMutasi hanya untuk yang TIDAK lewat form Kasir: setor modal, beli stok, biaya operasional, prive, lainnya. */
+const KATEGORI_KAS_MASUK = { modal:'Setor Modal', lainnya:'Kas Masuk Lainnya' };
+const KATEGORI_KAS_KELUAR = { stok:'Beli Stok / Restock', operasional:'Biaya Operasional', prive:'Prive (Ambil Pribadi)', lainnya:'Kas Keluar Lainnya' };
+function labelKategoriKas(arah, kategori){
+  const map = arah==='masuk' ? KATEGORI_KAS_MASUK : KATEGORI_KAS_KELUAR;
+  return map[kategori] || kategori;
+}
+// Gabungkan mutasi otomatis (dari transaksi kasir) + manual (state.kasMutasi) jadi satu daftar terurut,
+// supaya "Saldo Kas Saat Ini" dan tabel mutasi selalu konsisten dengan satu sumber perhitungan.
+function daftarMutasiKas(){
+  const list = [];
+  state.transaksi.forEach(t=>{
+    if(t.dibatalkan) return;
+    // Kas toko HANYA mencatat uang milik toko sendiri — dari penjualan (Produk/Laporan), baik dibayar tunai
+    // maupun pakai saldo anggota (begitu saldo dipakai belanja, uangnya jadi milik toko).
+    // Top Up dan Tarik Tunai SENGAJA tidak dihitung: itu cuma titipan/saldo anggota yang BELUM dibelanjakan,
+    // bukan uang toko, jadi tidak menambah/mengurangi Kas maupun Modal sampai benar-benar dipakai belanja.
+    if(t.tipe==='jual' && (t.metode==='tunai' || t.metode==='saldo')){
+      list.push({ tanggal:t.tanggal, arah:'masuk', uraian:`Penjualan${t.metode==='saldo'?' (bayar saldo)':' tunai'}${t.anggotaNama?` — ${t.anggotaNama}`:''}`, jumlah:t.total, otomatis:true, refId:t.id });
+    } else if(t.tipe==='jual' && t.metode==='hutang' && t.statusBayar==='lunas'){
+      list.push({ tanggal:t.lunasPada||t.tanggal, arah:'masuk', uraian:`Pelunasan hutang — ${t.anggotaNama||'pembeli'}`, jumlah:t.total, otomatis:true, refId:t.id });
+    }
+  });
+  state.kasMutasi.forEach(m=>{
+    list.push({ id:m.id, tanggal:m.tanggal, arah:m.arah, uraian:labelKategoriKas(m.arah, m.kategori) + (m.catatan?` — ${m.catatan}`:''), jumlah:m.jumlah, otomatis:false, kategori:m.kategori });
+  });
+  return list.sort((a,b)=> new Date(a.tanggal) - new Date(b.tanggal));
+}
+// Saldo kas saat ini = kas awal + semua kas masuk − semua kas keluar (sepanjang waktu, tidak tergantung filter tanggal Laporan/Kas)
+function hitungSaldoKasSaatIni(){
+  return daftarMutasiKas().reduce((s,m)=> s + (m.arah==='masuk' ? m.jumlah : -m.jumlah), state.kasAwal||0);
+}
+pages.kas = function(){
+  const today = todayISO();
+  return `
+    <h1 class="page-title">Kas</h1>
+    <p class="page-sub">Arus kas uang toko sendiri — tidak termasuk uang titipan/saldo anggota</p>
+    <div class="cards" id="kasCardsAtas">
+      <div class="card accent">
+        <div class="label">Saldo Kas Saat Ini</div>
+        <div class="value">${rupiah(hitungSaldoKasSaatIni())}</div>
+      </div>
+      <div class="card">
+        <div class="label">Kas Awal</div>
+        <div class="value">${rupiah(state.kasAwal||0)}</div>
+      </div>
+    </div>
+    <div class="row-between">
+      <button class="btn btn-primary" id="btnKasMasuk">＋ Kas Masuk</button>
+      <button class="btn btn-danger" id="btnKasKeluar">－ Kas Keluar</button>
+    </div>
+    <div class="row-between" style="margin-top:14px;">
+      <div class="filters">
+        <input type="date" class="search" id="kasDari" value="${today}">
+        <span style="align-self:center;color:var(--muted);font-size:13px;">s/d</span>
+        <input type="date" class="search" id="kasSampai" value="${today}">
+        <button class="btn btn-primary" id="btnTerapkanKas">Terapkan</button>
+      </div>
+    </div>
+    <div class="cards" id="kasCardsPeriode"></div>
+    <div class="panel">
+      <div class="panel-head">Modal</div>
+      <div class="panel-body" id="cekModalWrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Mutasi Kas</div>
+      <div class="panel-body" id="kasMutasiWrap"></div>
+    </div>
+  `;
+};
+function hitungNilaiStokSaatIni(){
+  return state.produk.reduce((s,p)=>s+(p.hargaBeli||0)*p.stok,0);
+}
+// Laba kumulatif (gross, sepanjang waktu) dari SEMUA penjualan — tunai maupun hutang — karena barang sudah
+// keluar dari stok begitu terjual, terlepas dari statusnya sudah dibayar tunai atau belum.
+function hitungLabaKumulatif(){
+  let omzet=0, modal=0;
+  state.transaksi.forEach(t=>{
+    if(t.tipe!=='jual' || t.dibatalkan) return;
+    t.items.forEach(i=>{ omzet += i.harga*i.qty; modal += (i.hargaBeli||0)*i.qty; });
+  });
+  return { omzetKumulatif: omzet, modalTerjual: modal, labaKumulatif: omzet-modal };
+}
+// Piutang = penjualan hutang yang belum lunas — barang sudah keluar dari stok tapi uangnya belum masuk kas,
+// jadi ini "aset" tersendiri yang harus ikut dihitung, bukan kas maupun stok.
+function hitungPiutangBelumLunas(){
+  return state.transaksi.filter(t=>t.tipe==='jual' && t.metode==='hutang' && t.statusBayar==='belum_bayar' && !t.dibatalkan).reduce((s,t)=>s+t.total,0);
+}
+// Modal = Saldo Kas + Nilai Stok + Piutang − Laba Kumulatif + Biaya Operasional Kumulatif + Prive Kumulatif.
+// Tidak perlu input manual (tidak ada "Modal Awal") — dihitung otomatis dari data yang sudah ada.
+// Angka ini SEHARUSNYA STABIL dari waktu ke waktu (naik/turun jelas dari Setor Modal atau Prive yang kamu catat sendiri).
+// Kalau tiba-tiba turun tanpa sebab yang jelas, itu tanda ada barang hilang/susut atau salah catat.
+function renderCekModal(){
+  const wrap = document.getElementById('cekModalWrap');
+  if(!wrap) return;
+  const nilaiStok = hitungNilaiStokSaatIni();
+  const saldoKas = hitungSaldoKasSaatIni();
+  const piutang = hitungPiutangBelumLunas();
+  const { labaKumulatif } = hitungLabaKumulatif();
+  const biayaOperasionalKumulatif = state.kasMutasi.filter(m=>m.arah==='keluar' && m.kategori==='operasional').reduce((s,m)=>s+m.jumlah,0);
+  const priveKumulatif = state.kasMutasi.filter(m=>m.arah==='keluar' && m.kategori==='prive').reduce((s,m)=>s+m.jumlah,0);
+  const modal = saldoKas + nilaiStok + piutang - labaKumulatif + biayaOperasionalKumulatif + priveKumulatif;
+  const baris = [
+    ['Saldo Kas', saldoKas, true],
+    ['+ Nilai Stok', nilaiStok, true],
+    ['+ Piutang (Hutang Belum Lunas)', piutang, piutang>0],
+    ['− Laba Kumulatif', labaKumulatif, true],
+    ['+ Biaya Operasional Kumulatif', biayaOperasionalKumulatif, biayaOperasionalKumulatif>0],
+    ['+ Prive Kumulatif', priveKumulatif, priveKumulatif>0],
+  ];
+  wrap.innerHTML = `
+    <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Modal = uang tunai + nilai barang di rak, dikeluarkan dari laba yang sudah dihasilkan. Angka ini seharusnya <strong>stabil</strong> dari waktu ke waktu — kalau tiba-tiba turun sendiri (di luar Prive/Biaya Operasional yang kamu catat), itu tanda ada barang hilang/susut atau salah catat.</p>
+    <table><tbody>
+      ${baris.filter(b=>b[2]).map(b=>`<tr><td>${b[0]}</td><td class="num">${rupiah(b[1])}</td></tr>`).join('')}
+      <tr style="border-top:1px solid var(--border);font-weight:700;"><td>Modal Saat Ini</td><td class="num">${rupiah(modal)}</td></tr>
+    </tbody></table>
+  `;
+}
+function renderKas(){
+  const dariEl = document.getElementById('kasDari'), sampaiEl = document.getElementById('kasSampai');
+  if(!dariEl) return;
+  renderCekModal();
+  const dari = dariEl.value, sampai = sampaiEl.value;
+  const semua = daftarMutasiKas().filter(m=> tanggalLokal(new Date(m.tanggal))>=dari && tanggalLokal(new Date(m.tanggal))<=sampai);
+  const totalMasuk = semua.filter(m=>m.arah==='masuk').reduce((s,m)=>s+m.jumlah,0);
+  const totalKeluar = semua.filter(m=>m.arah==='keluar').reduce((s,m)=>s+m.jumlah,0);
+  document.getElementById('kasCardsPeriode').innerHTML = `
+    <div class="card"><div class="label">Kas Masuk (periode)</div><div class="value" style="color:var(--success);">${rupiah(totalMasuk)}</div></div>
+    <div class="card"><div class="label">Kas Keluar (periode)</div><div class="value" style="color:var(--danger);">${rupiah(totalKeluar)}</div></div>
+    <div class="card accent"><div class="label">Selisih (periode)</div><div class="value">${rupiah(totalMasuk-totalKeluar)}</div></div>
+  `;
+  const wrap = document.getElementById('kasMutasiWrap');
+  const list = [...semua].reverse();
+  if(!list.length){ wrap.innerHTML = `<div class="empty">Tidak ada mutasi kas pada rentang tanggal ini.</div>`; return; }
+  wrap.innerHTML = `<table><thead><tr><th>Waktu</th><th>Uraian</th><th class="num">Masuk</th><th class="num">Keluar</th><th></th></tr></thead><tbody>
+    ${list.map(m=>`<tr>
+      <td>${new Date(m.tanggal).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+      <td>${m.uraian}${m.otomatis?' <span class="tag" style="background:var(--border);color:var(--muted);">Otomatis</span>':''}</td>
+      <td class="num" style="color:var(--success);">${m.arah==='masuk'?rupiah(m.jumlah):''}</td>
+      <td class="num" style="color:var(--danger);">${m.arah==='keluar'?rupiah(m.jumlah):''}</td>
+      <td style="text-align:right;white-space:nowrap;">${m.otomatis?'' : `<button class="btn btn-sm btn-danger" onclick="hapusKasMutasi('${m.id}')">Hapus</button>`}</td>
+    </tr>`).join('')}
+  </tbody></table>`;
+}
+function openKasMasuk(){
+  openModal(`
+    <div class="modal-head">＋ Catat Kas Masuk</div>
+    <div class="modal-body">
+      <div class="field"><label>Kategori</label>
+        <select id="fKasKategori">
+          ${Object.entries(KATEGORI_KAS_MASUK).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Nominal</label><input id="fKasNominal" type="text" inputmode="numeric" placeholder="mis. 100.000"></div>
+      <div class="field"><label>Catatan (opsional)</label><input id="fKasCatatan" type="text" placeholder="mis. setor modal dari pemilik"></div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-primary" onclick="simpanKasMutasi('masuk')">Simpan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fKasNominal');
+  setTimeout(()=>document.getElementById('fKasNominal').focus(),50);
+}
+function openKasKeluar(){
+  openModal(`
+    <div class="modal-head">－ Catat Kas Keluar</div>
+    <div class="modal-body">
+      <div class="field"><label>Kategori</label>
+        <select id="fKasKategori">
+          ${Object.entries(KATEGORI_KAS_KELUAR).map(([k,v])=>`<option value="${k}">${v}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field"><label>Nominal</label><input id="fKasNominal" type="text" inputmode="numeric" placeholder="mis. 100.000"></div>
+      <div class="field"><label>Catatan (opsional)</label><input id="fKasCatatan" type="text" placeholder="mis. belanja stok ke supplier"></div>
+      <p class="hint" style="margin:0 0 4px;">Beli Stok/Restock dan Prive dicatat sebagai kas keluar, tapi tidak mengurangi Laba di halaman Laporan — hanya Biaya Operasional yang mengurangi laba.</p>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal()">Batal</button>
+        <button class="btn btn-danger" onclick="simpanKasMutasi('keluar')">Simpan</button>
+      </div>
+    </div>
+  `);
+  attachFormatRibuan('fKasNominal');
+  setTimeout(()=>document.getElementById('fKasNominal').focus(),50);
+}
+function simpanKasMutasi(arah){
+  const kategori = document.getElementById('fKasKategori').value;
+  const jumlah = angkaSaja(document.getElementById('fKasNominal').value);
+  const catatan = document.getElementById('fKasCatatan').value.trim();
+  if(!jumlah || jumlah<=0){ toast('Nominal tidak valid'); return; }
+  state.kasMutasi.push({ id: uid('kas'), tanggal: new Date().toISOString(), arah, kategori, jumlah, catatan });
+  saveDB(); closeModal(); toast(arah==='masuk' ? 'Kas masuk dicatat' : 'Kas keluar dicatat'); renderPage('kas');
+}
+function hapusKasMutasi(id){
+  const m = state.kasMutasi.find(x=>x.id===id); if(!m) return;
+  if(!confirm(`Hapus catatan "${labelKategoriKas(m.arah,m.kategori)}" sebesar ${rupiah(m.jumlah)}?`)) return;
+  state.kasMutasi = state.kasMutasi.filter(x=>x.id!==id);
+  saveDB(); toast('Catatan kas dihapus'); renderKas();
+}
+
+/* ============ LAPORAN (LABA) ============ */
+pages.laporan = function(){
+  const today = todayISO();
+  return `
+    <h1 class="page-title">Laporan</h1>
+    <p class="page-sub">Ringkasan omzet, modal, dan laba warung</p>
+    <div class="row-between">
+      <div class="filters">
+        <select class="search" id="labaPreset" onchange="terapkanPresetLaporan()">
+          <option value="custom">Kustom</option>
+          <option value="harian">Harian (Hari Ini)</option>
+          <option value="mingguan">Pekan Ini</option>
+          <option value="bulanan">Bulan Ini</option>
+          <option value="tahunan">Tahun Ini</option>
+        </select>
+        <input type="date" class="search" id="labaDari" value="${today}">
+        <span style="align-self:center;color:var(--muted);font-size:13px;">s/d</span>
+        <input type="date" class="search" id="labaSampai" value="${today}">
+        <button class="btn btn-primary" id="btnTerapkanLaba">Terapkan</button>
+      </div>
+    </div>
+    <div class="cards" id="labaCards"></div>
+    <div class="panel">
+      <div class="panel-head">Tren Harian</div>
+      <div class="panel-body">
+        <div class="chart-legend">
+          <span><i style="background:var(--accent);"></i>Omzet</span>
+          <span><i style="background:var(--success);"></i>Laba</span>
+        </div>
+        <div class="chart-scroll"><canvas id="grafikLaporan"></canvas></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Produk Terlaris (Omzet)</div>
+      <div class="panel-body" id="produkTerlarisChartWrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Rincian Laba per Produk</div>
+      <div class="panel-body" id="labaTabelWrap"></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Pembelian Belum Bayar (Hutang)</div>
+      <div class="panel-body" id="hutangTabelWrap"></div>
+    </div>
+  `;
+};
+function terapkanPresetLaporan(){
+  const preset = document.getElementById('labaPreset').value;
+  if(preset==='custom') return;
+  const today = todayISO();
+  let dari, sampai;
+  if(preset==='harian'){ dari = today; sampai = today; }
+  else if(preset==='mingguan'){ ({dari, sampai} = rangeMinggu(today)); }
+  else if(preset==='bulanan'){ ({dari, sampai} = rangeBulan(today.slice(0,7))); }
+  else { ({dari, sampai} = rangeTahun(today)); }
+  document.getElementById('labaDari').value = dari;
+  document.getElementById('labaSampai').value = sampai;
+  renderLaporan();
+}
+function hitungLaporan(dari, sampai){
+  const list = state.transaksi.filter(t=>t.tipe==='jual' && !t.dibatalkan && tanggalLokal(new Date(t.tanggal))>=dari && tanggalLokal(new Date(t.tanggal))<=sampai);
+  let omzet=0, modal=0;
+  let omzetTunai=0, modalTunai=0, omzetKredit=0, modalKredit=0;
+  const perProduk = {};
+  const perHariMap = {};
+  // Siapkan semua tanggal dalam rentang lebih dulu (zona waktu lokal), supaya hari tanpa penjualan tetap tampil sebagai 0 di grafik
+  const [dY,dM,dD] = dari.split('-').map(Number);
+  const [aY,aM,aD] = sampai.split('-').map(Number);
+  let cursor = new Date(dY, dM-1, dD);
+  const akhir = new Date(aY, aM-1, aD);
+  while(cursor <= akhir){
+    const key = tanggalLokal(cursor);
+    perHariMap[key] = { omzet:0, modal:0 };
+    cursor.setDate(cursor.getDate()+1);
+  }
+  list.forEach(t=>{
+    const isKredit = t.metode==='hutang';
+    const tgl = tanggalLokal(new Date(t.tanggal));
+    if(!perHariMap[tgl]) perHariMap[tgl] = { omzet:0, modal:0 };
+    t.items.forEach(i=>{
+      const beli = (i.hargaBeli||0)*i.qty;
+      const jual = i.harga*i.qty;
+      omzet += jual; modal += beli;
+      if(isKredit){ omzetKredit += jual; modalKredit += beli; } else { omzetTunai += jual; modalTunai += beli; }
+      if(!perProduk[i.nama]) perProduk[i.nama] = {nama:i.nama, qty:0, omzet:0, modal:0, omzetTunai:0, modalTunai:0, omzetKredit:0, modalKredit:0};
+      perProduk[i.nama].qty += i.qty*(i.pcsPerSatuan||1);
+      perProduk[i.nama].omzet += jual;
+      perProduk[i.nama].modal += beli;
+      if(isKredit){ perProduk[i.nama].omzetKredit += jual; perProduk[i.nama].modalKredit += beli; }
+      else { perProduk[i.nama].omzetTunai += jual; perProduk[i.nama].modalTunai += beli; }
+      perHariMap[tgl].omzet += jual;
+      perHariMap[tgl].modal += beli;
+    });
+  });
+  const perHari = Object.keys(perHariMap).sort().map(k=>{
+    const d = perHariMap[k];
+    return { tanggal:k, omzet:d.omzet, modal:d.modal, laba:d.omzet-d.modal, label:k.slice(8,10)+'/'+k.slice(5,7) };
+  });
+  const rows = Object.values(perProduk).map(r=>({...r, laba:r.omzet-r.modal, labaTunai:r.omzetTunai-r.modalTunai, labaKredit:r.omzetKredit-r.modalKredit})).sort((a,b)=>b.laba-a.laba);
+  const listHutang = list.filter(t=>t.metode==='hutang');
+  const hutangBelumLunas = [...listHutang.filter(t=>t.statusBayar==='belum_bayar')].reverse();
+  const hutangLunas = listHutang.filter(t=>t.statusBayar==='lunas');
+  const totalHutangBelumLunas = hutangBelumLunas.reduce((s,t)=>s+t.total,0);
+  const labaTunai = omzetTunai - modalTunai;
+  const labaKredit = omzetKredit - modalKredit;
+  // Biaya operasional (listrik/sewa/gaji dll) mengurangi laba bersih. Beli stok & prive TIDAK ikut di sini
+  // karena bukan kerugian usaha — itu cuma perpindahan uang jadi barang / pengambilan modal pemilik (lihat halaman Kas).
+  const biayaOperasional = state.kasMutasi.filter(m=> m.arah==='keluar' && m.kategori==='operasional' && tanggalLokal(new Date(m.tanggal))>=dari && tanggalLokal(new Date(m.tanggal))<=sampai).reduce((s,m)=>s+m.jumlah,0);
+  const laba = omzet-modal;
+  return { omzet, modal, laba, labaTunai, labaKredit, biayaOperasional, labaBersih: laba-biayaOperasional, jumlahTransaksi: list.length, rows, perHari, hutangBelumLunas, hutangLunas, totalHutangBelumLunas };
+}
+function gambarGrafikLaporan(perHari){
+  const canvas = document.getElementById('grafikLaporan');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if(!perHari || !perHari.length){
+    canvas.style.width = '100%'; canvas.style.height = '60px';
+    canvas.width = canvas.clientWidth || 300; canvas.height = 60;
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    return;
+  }
+  const jumlahHari = perHari.length;
+  const lebarPerBar = jumlahHari<=14 ? 40 : jumlahHari<=31 ? 24 : 10;
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = Math.max(canvas.parentElement.clientWidth || 300, jumlahHari*lebarPerBar);
+  const cssHeight = 200;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  canvas.width = Math.round(cssWidth*dpr);
+  canvas.height = Math.round(cssHeight*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+
+  const cs = getComputedStyle(document.documentElement);
+  const warnaOmzet = cs.getPropertyValue('--accent').trim() || '#B8862F';
+  const warnaLaba = cs.getPropertyValue('--success').trim() || '#3E6B4F';
+  const warnaMuted = cs.getPropertyValue('--muted').trim() || '#6E6858';
+  const warnaBorder = cs.getPropertyValue('--border').trim() || '#E2D8BE';
+
+  const maxVal = Math.max(1, ...perHari.map(d=>Math.max(d.omzet, d.laba, 0)));
+  const tampilkanLabel = jumlahHari <= 31;
+  const padTop = 10, padBottom = tampilkanLabel ? 26 : 8, padSide = 2;
+  const chartH = cssHeight - padTop - padBottom;
+  const groupW = (cssWidth - padSide*2) / jumlahHari;
+  const barW = Math.max(2, Math.min(14, groupW/2 - 3));
+
+  ctx.strokeStyle = warnaBorder;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(0, padTop+chartH+0.5);
+  ctx.lineTo(cssWidth, padTop+chartH+0.5);
+  ctx.stroke();
+
+  perHari.forEach((d,i)=>{
+    const cx = padSide + i*groupW + groupW/2;
+    const hOmzet = (d.omzet/maxVal)*chartH;
+    const hLaba = (d.laba/maxVal)*chartH;
+    ctx.fillStyle = warnaOmzet;
+    ctx.fillRect(cx-barW-1, padTop+chartH-hOmzet, barW, hOmzet);
+    ctx.fillStyle = warnaLaba;
+    ctx.fillRect(cx+1, padTop+chartH-hLaba, barW, hLaba);
+    if(tampilkanLabel){
+      ctx.fillStyle = warnaMuted;
+      ctx.font = '10px -apple-system, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(d.label, cx, cssHeight-10);
+    }
+  });
+}
+// Grafik batang horizontal: produk dengan omzet tertinggi pada rentang tanggal yang dipilih di Laporan.
+function gambarGrafikProdukLaporan(rows){
+  const canvas = document.getElementById('grafikProdukLaporan');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const cssWidth = canvas.parentElement.clientWidth || 300;
+  const rowH = 30;
+  const cssHeight = Math.max(40, rows.length*rowH + 6);
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+  canvas.width = Math.round(cssWidth*dpr);
+  canvas.height = Math.round(cssHeight*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssWidth,cssHeight);
+  if(!rows.length) return;
+
+  const cs = getComputedStyle(document.documentElement);
+  const warnaAccent = cs.getPropertyValue('--accent').trim() || '#B8862F';
+  const warnaText = cs.getPropertyValue('--text').trim() || '#22281F';
+  const warnaMuted = cs.getPropertyValue('--muted').trim() || '#6E6858';
+
+  const labelW = Math.min(120, cssWidth*0.32);
+  const valueAreaW = Math.max(40, cssWidth - labelW - 90);
+  const maxVal = Math.max(1, ...rows.map(r=>r.omzet));
+
+  rows.forEach((r,i)=>{
+    const y = i*rowH + 5;
+    const barH = rowH - 12;
+    let nama = r.nama.length > 15 ? r.nama.slice(0,14)+'…' : r.nama;
+    ctx.fillStyle = warnaText;
+    ctx.font = '12px -apple-system, sans-serif';
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(nama, 0, y+barH/2);
+    const barW = Math.max(2, (r.omzet/maxVal)*valueAreaW);
+    ctx.fillStyle = warnaAccent;
+    ctx.fillRect(labelW, y, barW, barH);
+    ctx.fillStyle = warnaMuted;
+    ctx.font = '11px -apple-system, sans-serif';
+    ctx.fillText(rupiah(r.omzet), labelW+barW+6, y+barH/2);
+  });
+}
+function renderLaporan(){
+  const dariEl = document.getElementById('labaDari'), sampaiEl = document.getElementById('labaSampai');
+  if(!dariEl) return;
+  const dari = dariEl.value, sampai = sampaiEl.value;
+  const r = hitungLaporan(dari, sampai);
+  document.getElementById('labaCards').innerHTML = `
+    <div class="card"><div class="label">Omzet</div><div class="value">${rupiah(r.omzet)}</div></div>
+    <div class="card"><div class="label">Modal (HPP)</div><div class="value">${rupiah(r.modal)}</div></div>
+    <div class="card"><div class="label">Laba Tunai</div><div class="value" style="color:var(--success);">${rupiah(r.labaTunai)}</div></div>
+    <div class="card"><div class="label">Laba Kredit</div><div class="value" style="color:var(--danger);">${rupiah(r.labaKredit)}</div></div>
+    <div class="card accent"><div class="label">Total Laba (Kotor)</div><div class="value">${rupiah(r.laba)}</div></div>
+    <div class="card"><div class="label">Biaya Operasional</div><div class="value" style="color:var(--danger);">${rupiah(r.biayaOperasional)}</div></div>
+    <div class="card accent"><div class="label">Laba Bersih</div><div class="value">${rupiah(r.labaBersih)}</div></div>
+    <div class="card"><div class="label">Jumlah Transaksi</div><div class="value">${r.jumlahTransaksi}</div></div>
+    <div class="card"><div class="label">Belum Bayar (Hutang)</div><div class="value" style="color:var(--danger);">${rupiah(r.totalHutangBelumLunas)}</div></div>
+  `;
+  gambarGrafikLaporan(r.perHari);
+  const produkChartWrap = document.getElementById('produkTerlarisChartWrap');
+  if(produkChartWrap){
+    if(r.rows.length){
+      const topProdukOmzet = [...r.rows].sort((a,b)=>b.omzet-a.omzet).slice(0,8);
+      produkChartWrap.innerHTML = `<div class="chart-scroll"><canvas id="grafikProdukLaporan"></canvas></div>`;
+      gambarGrafikProdukLaporan(topProdukOmzet);
+    } else {
+      produkChartWrap.innerHTML = `<div class="empty">Tidak ada penjualan pada rentang tanggal ini.</div>`;
+    }
+  }
+  const wrap = document.getElementById('labaTabelWrap');
+  if(!r.rows.length){
+    wrap.innerHTML = `<div class="empty">Tidak ada penjualan pada rentang tanggal ini.</div>`;
+  } else {
+    const totalQty = r.rows.reduce((s,x)=>s+x.qty,0);
+    wrap.innerHTML = `<table><thead><tr><th>Produk</th><th class="num">Terjual</th><th class="num">Omzet</th><th class="num">Modal</th><th class="num">Laba Tunai</th><th class="num">Laba Kredit</th><th class="num">Total Laba</th></tr></thead><tbody>
+      ${r.rows.map(x=>`<tr><td>${x.nama}</td><td class="num">${x.qty}</td><td class="num">${rupiah(x.omzet)}</td><td class="num">${rupiah(x.modal)}</td><td class="num">${rupiah(x.labaTunai)}</td><td class="num" style="color:var(--danger);">${rupiah(x.labaKredit)}</td><td class="num" style="color:var(--success);font-weight:600;">${rupiah(x.laba)}</td></tr>`).join('')}
+    </tbody>
+    <tfoot><tr style="font-weight:700;border-top:2px solid var(--primary-dark);">
+      <td>Total</td>
+      <td class="num">${totalQty}</td>
+      <td class="num">${rupiah(r.omzet)}</td>
+      <td class="num">${rupiah(r.modal)}</td>
+      <td class="num">${rupiah(r.labaTunai)}</td>
+      <td class="num" style="color:var(--danger);">${rupiah(r.labaKredit)}</td>
+      <td class="num" style="color:var(--success);">${rupiah(r.laba)}</td>
+    </tr></tfoot>
+    </table>`;
+  }
+  const wrapHutang = document.getElementById('hutangTabelWrap');
+  if(wrapHutang){
+    if(!r.hutangBelumLunas.length){
+      wrapHutang.innerHTML = `<div class="empty">Tidak ada pembelian belum bayar pada rentang tanggal ini.</div>`;
+    } else {
+      wrapHutang.innerHTML = `<table><thead><tr><th>Tanggal</th><th>Nama Pembeli</th><th>Detail</th><th class="num">Total</th><th></th></tr></thead><tbody>
+        ${r.hutangBelumLunas.map(t=>`<tr>
+          <td>${new Date(t.tanggal).toLocaleString('id-ID',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</td>
+          <td>${t.anggotaNama||'-'}</td>
+          <td style="color:var(--muted);font-size:12.5px;">${t.items.map(i=>`${i.nama} ${labelItemQty(i)}`).join(', ')}</td>
+          <td class="num">${rupiah(t.total)}</td>
+          <td style="text-align:right;white-space:nowrap;"><button class="btn btn-sm btn-primary" onclick="tandaiLunasHutang('${t.id}')">Tandai Lunas</button></td>
+        </tr>`).join('')}
+      </tbody>
+      <tfoot><tr style="font-weight:700;border-top:2px solid var(--primary-dark);">
+        <td colspan="3">Total Belum Lunas</td>
+        <td class="num" style="color:var(--danger);">${rupiah(r.totalHutangBelumLunas)}</td>
+        <td></td>
+      </tr></tfoot>
+      </table>`;
+    }
+  }
+}
+
+/* ============ PENGATURAN ============ */
+pages.pengaturan = function(){
+  return `
+    <h1 class="page-title">Pengaturan</h1>
+    <p class="page-sub">Cadangkan atau pulihkan data warung</p>
+    <div class="panel">
+      <div class="panel-head">Akun & Keamanan</div>
+      <div class="panel-body">
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Masuk sebagai <strong>${auth ? (auth.username||'').replace(/</g,'&lt;') : '-'}</strong>. Password ini melindungi menu Anggota, Produk, Laporan, dan Pengaturan — menu Dashboard, Kasir, dan Riwayat tetap bebas diakses tanpa login.</p>
+        <p style="font-size:12.5px;color:${auth && auth.pertanyaan ? 'var(--success)' : 'var(--danger)'};margin:-6px 0 12px;">${auth && auth.pertanyaan ? '✓ Pertanyaan keamanan sudah diatur (untuk reset password kalau lupa)' : '⚠ Pertanyaan keamanan belum diatur — kalau lupa password, data bisa berisiko hilang'}</p>
+        <button class="btn" onclick="bukaGantiAkun()">Ubah Username / Password / Pertanyaan Keamanan</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Kas Awal</div>
+      <div class="panel-body">
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Uang TUNAI yang dipegang toko sebelum mulai memakai halaman Kas — jangan campur nilai barang/stok di sini, ini murni yang bisa dipegang fisik. Diisi sekali saja sebagai titik awal perhitungan; ubah kalau perlu koreksi.</p>
+        <div class="field"><label>Nominal Kas Awal (Tunai)</label><input id="fKasAwal" type="text" inputmode="numeric" value="${state.kasAwal||0}"></div>
+        <button class="btn btn-primary" onclick="simpanKasAwal()">Simpan Kas Awal</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Cadangkan Data</div>
+      <div class="panel-body">
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Data disimpan di penyimpanan lokal browser ini saja. Unduh cadangan secara berkala agar data tidak hilang.</p>
+        <button class="btn btn-primary" onclick="exportData()">⬇ Unduh Cadangan (.json)</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Cadangan Otomatis Harian <span class="badge-count">jam 23:45</span></div>
+      <div class="panel-body">
+        <p style="font-size:13.5px;color:var(--muted);margin-top:0;">Selama aplikasi ini terbuka di perangkat, data akan dicadangkan otomatis tiap hari sekitar jam 23:45 dan disimpan di sini (7 hari terakhir). Kalau aplikasi tertutup persis di jam itu, cadangan susulan akan dibuat begitu aplikasi dibuka lagi.</p>
+        <div id="daftarAutoBackup"></div>
+        <button class="btn" style="margin-top:10px;" onclick="simpanBackupOtomatis(true); toast('Cadangan otomatis disimpan sekarang')">Buat Cadangan Sekarang</button>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Pulihkan Data</div>
+      <div class="panel-body">
+        <input type="file" id="fileImport" accept="application/json">
+        <p class="hint">Memulihkan data akan menimpa seluruh data yang ada saat ini.</p>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head">Zona Berbahaya</div>
+      <div class="panel-body">
+        <button class="btn btn-danger" onclick="resetData()">Hapus Semua Data</button>
+      </div>
+    </div>
+  `;
+};
+function simpanKasAwal(){
+  const nominal = angkaSaja(document.getElementById('fKasAwal').value);
+  state.kasAwal = nominal;
+  saveDB(); toast('Kas awal disimpan'); renderPage('pengaturan');
+}
+function exportData(){
+  const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `backup-kasir-toko-${todayISO()}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  toast('Cadangan diunduh');
+}
+function importData(file){
+  const reader = new FileReader();
+  reader.onload = e=>{
+    try{
+      const data = JSON.parse(e.target.result);
+      if(!data.anggota || !data.produk || !data.transaksi) throw new Error('format tidak valid');
+      if(!confirm('Ini akan menimpa semua data saat ini. Lanjutkan?')) return;
+      state = data;
+      if(typeof state.kasAwal !== 'number') state.kasAwal = 0;
+      if(typeof state.modalAwal !== 'number') state.modalAwal = 0;
+      if(!state.kasMutasi) state.kasMutasi = [];
+      saveDB(); toast('Data berhasil dipulihkan'); goPage('dashboard');
+    }catch(err){ toast('Gagal memulihkan: file tidak valid'); }
+  };
+  reader.readAsText(file);
+}
+function resetData(){
+  if(!confirm('Hapus SEMUA data anggota, produk, dan riwayat? Tindakan ini tidak bisa dibatalkan.')) return;
+  if(!confirm('Yakin? Pertimbangkan unduh cadangan terlebih dahulu.')) return;
+  state = { anggota:[], produk:[], transaksi:[], riwayatBarcode:{}, kasAwal:0, modalAwal:0, kasMutasi:[] };
+  saveDB(); toast('Semua data dihapus'); goPage('dashboard');
+}
+
+/* ============ BACKUP OTOMATIS HARIAN (tersimpan di perangkat ini, target jam 23:45) ============
+   Catatan penting: browser/PWA tidak bisa menjalankan kode saat aplikasinya benar-benar tertutup.
+   Jadi ini bekerja dengan cara: selama aplikasi terbuka, dicek tiap menit — begitu jam menunjukkan
+   23:45 atau lebih dan hari itu belum ada cadangan, langsung disimpan otomatis. Kalau aplikasi
+   kebetulan tertutup persis di jam segitu, saat dibuka lagi keesokan harinya akan langsung dibuatkan
+   cadangan susulan dari data yang ada, supaya tidak ada hari yang benar-benar terlewat. */
+const AUTO_BACKUP_KEY = 'warungPondokAutoBackup_v1';
+const JAM_AUTO_BACKUP = 23, MENIT_AUTO_BACKUP = 45;
+function tanggalLokal(d){
+  d = d || new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+// Bantuan hitung rentang tanggal untuk preset periode (Harian/Mingguan/Bulanan/Tahunan) di Laporan & Riwayat Anggota.
+function rangeMinggu(dateStr){
+  const [y,m,d] = dateStr.split('-').map(Number);
+  const dt = new Date(y, m-1, d);
+  const dow = dt.getDay(); // 0=Minggu..6=Sabtu
+  const diffKeSenin = (dow===0 ? -6 : 1-dow);
+  const senin = new Date(dt); senin.setDate(dt.getDate()+diffKeSenin);
+  const minggu = new Date(senin); minggu.setDate(senin.getDate()+6);
+  return { dari: tanggalLokal(senin), sampai: tanggalLokal(minggu) };
+}
+function rangeBulan(monthStr){
+  const [y,m] = monthStr.split('-').map(Number);
+  const dari = `${y}-${String(m).padStart(2,'0')}-01`;
+  const hariTerakhir = new Date(y, m, 0).getDate();
+  const sampai = `${y}-${String(m).padStart(2,'0')}-${String(hariTerakhir).padStart(2,'0')}`;
+  return { dari, sampai };
+}
+function rangeTahun(dateStr){
+  const y = dateStr.split('-')[0];
+  return { dari: `${y}-01-01`, sampai: `${y}-12-31` };
+}
+function loadAutoBackupList(){
+  try{ return JSON.parse(localStorage.getItem(AUTO_BACKUP_KEY)) || []; }catch(e){ return []; }
+}
+function saveAutoBackupList(list){ localStorage.setItem(AUTO_BACKUP_KEY, JSON.stringify(list)); }
+function simpanBackupOtomatis(paksa){
+  const list = loadAutoBackupList();
+  const tgl = tanggalLokal();
+  const idx = list.findIndex(b=>b.tanggal===tgl);
+  if(idx !== -1){
+    if(!paksa) return;
+    list[idx] = { tanggal: tgl, waktu: new Date().toISOString(), data: state };
+  } else {
+    list.push({ tanggal: tgl, waktu: new Date().toISOString(), data: state });
+    while(list.length > 7) list.shift(); // simpan maksimal 7 cadangan harian terakhir
+  }
+  saveAutoBackupList(list);
+  const wrap = document.getElementById('daftarAutoBackup');
+  if(wrap) renderDaftarAutoBackup();
+}
+function cekBackupOtomatis(){
+  const now = new Date();
+  const tgl = tanggalLokal(now);
+  const list = loadAutoBackupList();
+  if(list.some(b=>b.tanggal===tgl)) return;
+  const sudahLewatJam = now.getHours() > JAM_AUTO_BACKUP || (now.getHours()===JAM_AUTO_BACKUP && now.getMinutes() >= MENIT_AUTO_BACKUP);
+  const terakhir = list[list.length-1];
+  const lamaTakBackup = !terakhir || (now - new Date(terakhir.waktu)) > 24*3600*1000;
+  if(sudahLewatJam || lamaTakBackup) simpanBackupOtomatis();
+}
+function unduhAutoBackup(tgl){
+  const list = loadAutoBackupList();
+  const b = list.find(x=>x.tanggal===tgl); if(!b) return;
+  const blob = new Blob([JSON.stringify(b.data,null,2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `backup-otomatis-kasir-toko-${tgl}.json`;
+  a.click(); URL.revokeObjectURL(url);
+}
+function pulihkanAutoBackup(tgl){
+  const list = loadAutoBackupList();
+  const b = list.find(x=>x.tanggal===tgl); if(!b) return;
+  if(!confirm(`Pulihkan data ke kondisi cadangan otomatis tanggal ${tgl}? Data saat ini akan tertimpa.`)) return;
+  state = b.data; saveDB(); toast(`Data dipulihkan ke cadangan ${tgl}`); goPage('dashboard');
+}
+function renderDaftarAutoBackup(){
+  const wrap = document.getElementById('daftarAutoBackup');
+  if(!wrap) return;
+  const list = [...loadAutoBackupList()].reverse();
+  wrap.innerHTML = list.length ? list.map(b=>`
+    <div class="cart-item">
+      <div class="nm">${b.tanggal}<br><span style="color:var(--muted);font-size:11.5px;">${new Date(b.waktu).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</span></div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="unduhAutoBackup('${b.tanggal}')">⬇ Unduh</button>
+        <button class="btn btn-sm btn-danger" onclick="pulihkanAutoBackup('${b.tanggal}')">Pulihkan</button>
+      </div>
+    </div>
+  `).join('') : `<div class="empty" style="padding:10px 0;">Belum ada cadangan otomatis.</div>`;
+}
+
+/* ============ PAGE EVENT BINDING ============ */
+function attachPageEvents(name){
+  if(name==='anggota'){
+    renderTabelAnggota('');
+    document.getElementById('cariAnggota').addEventListener('input', e=>renderTabelAnggota(e.target.value));
+    document.getElementById('btnTambahAnggota').addEventListener('click', openTambahAnggota);
+    document.getElementById('btnScanAnggotaCari').addEventListener('click', ()=>{
+      openCameraScan(kode=>{
+        const cariEl = document.getElementById('cariAnggota');
+        if(cariEl) cariEl.value = kode;
+        renderTabelAnggota(kode);
+        const a = state.anggota.find(x=>x.nomorInduk && x.nomorInduk.toUpperCase()===kode.trim().toUpperCase());
+        if(a) toast(`Ditemukan: ${a.nama}`);
+        else toast('Barcode tidak cocok dengan anggota manapun');
+      }, { title:'Scan Barcode Anggota' });
+    });
+  }
+  if(name==='produk'){
+    renderTabelProduk('');
+    document.getElementById('cariProduk').addEventListener('input', e=>renderTabelProduk(e.target.value));
+    document.getElementById('btnTambahProduk').addEventListener('click', openTambahProduk);
+  }
+  if(name==='kasir'){
+    renderProdukGrid('');
+    renderCart();
+    pilihPembeli(null);
+    setTimeout(focusScanKasir, 50);
+    document.getElementById('cariProdukKasir').addEventListener('input', e=>{
+      const q = e.target.value.trim();
+      const barcodeMatch = state.produk.find(p=>p.barcode && p.barcode===q);
+      if(barcodeMatch){ e.target.value=''; tambahViaBarcode(barcodeMatch.barcode); renderProdukGrid(''); return; }
+      const anggotaMatch = state.anggota.find(a=>a.nomorInduk && a.nomorInduk===q.toUpperCase());
+      if(anggotaMatch){ e.target.value=''; pilihPembeli(anggotaMatch.id); toast(`Pembeli: ${anggotaMatch.nama} · Saldo ${rupiah(anggotaMatch.saldo)}`); renderProdukGrid(''); return; }
+      renderProdukGrid(q);
+    });
+    document.getElementById('btnScanProduk').addEventListener('click', ()=>{
+      openCameraScan(v=>{
+        tambahViaBarcode(v);
+        renderProdukGrid(document.getElementById('cariProdukKasir').value.trim());
+      }, { continuous:true, title:'Scan Barcode Produk' });
+    });
+    document.getElementById('btnProses').addEventListener('click', prosesTransaksi);
+    attachFormatRibuan('fBayar', updateSisaKasir);
+    const cariPembeli = document.getElementById('cariPembeli');
+    const dropdown = document.getElementById('pembeliDropdown');
+    document.getElementById('btnScanAnggota').addEventListener('click', ()=>{
+      openCameraScan(v=>{
+        const a = state.anggota.find(x=>x.nomorInduk && x.nomorInduk===v.trim().toUpperCase());
+        if(a){ pilihPembeli(a.id); toast(`Terpindai: ${a.nama} · Saldo ${rupiah(a.saldo)}`); }
+        else toast('Anggota dengan barcode ini tidak ditemukan');
+      }, { title:'Scan Kartu Anggota' });
+    });
+    cariPembeli.addEventListener('input', e=>{
+      const q = e.target.value.toLowerCase();
+      kasirAnggotaId = null;
+      if(!q){ dropdown.classList.remove('show'); document.getElementById('pembeliInfo').innerHTML = `<p style="font-size:12.5px;color:var(--muted);margin:6px 0 12px;">Mode: <strong>Umum / Tunai</strong></p>`; return; }
+      const scanMatch = state.anggota.find(a=>a.nomorInduk && a.nomorInduk.toLowerCase()===q);
+      if(scanMatch){ pilihPembeli(scanMatch.id); toast(`Terpindai: ${scanMatch.nama}`); return; }
+      const matches = state.anggota.filter(a=>a.nama.toLowerCase().includes(q) || (a.nomorInduk||'').toLowerCase().includes(q)).slice(0,8);
+      if(!matches.length){ dropdown.innerHTML = `<div style="color:var(--muted);">Tidak ditemukan</div>`; dropdown.classList.add('show'); return; }
+      dropdown.innerHTML = matches.map(a=>`<div onclick="pilihPembeli('${a.id}')">${a.nama}${a.nomorInduk?` <span style="color:var(--muted);font-size:11px;">(${a.nomorInduk})</span>`:''} <span style="color:var(--muted);font-size:11.5px;">· ${rupiah(a.saldo)}</span></div>`).join('');
+      dropdown.classList.add('show');
+    });
+    document.addEventListener('click', function hideDropdown(e){
+      if(!e.target.closest('.anggota-select-search')) dropdown.classList.remove('show');
+    });
+  }
+  if(name==='riwayat'){
+    renderTabelRiwayat();
+    document.getElementById('filterTanggal').addEventListener('change', renderTabelRiwayat);
+    document.getElementById('filterTipe').addEventListener('change', renderTabelRiwayat);
+  }
+  if(name==='kas'){
+    renderKas();
+    document.getElementById('btnTerapkanKas').addEventListener('click', renderKas);
+    document.getElementById('btnKasMasuk').addEventListener('click', openKasMasuk);
+    document.getElementById('btnKasKeluar').addEventListener('click', openKasKeluar);
+  }
+  if(name==='laporan'){
+    renderLaporan();
+    document.getElementById('btnTerapkanLaba').addEventListener('click', renderLaporan);
+    const resetKePreset = ()=>{ const p = document.getElementById('labaPreset'); if(p) p.value = 'custom'; };
+    document.getElementById('labaDari').addEventListener('input', resetKePreset);
+    document.getElementById('labaSampai').addEventListener('input', resetKePreset);
+  }
+  if(name==='pengaturan'){
+    renderDaftarAutoBackup();
+    attachFormatRibuan('fKasAwal');
+    document.getElementById('fileImport').addEventListener('change', e=>{
+      if(e.target.files[0]) importData(e.target.files[0]);
+    });
+  }
+}
+
+/* ============ INIT ============ */
+goPage('dashboard');
+perbaruiBadgeStokMenipis();
+cekBackupOtomatis();
+setInterval(cekBackupOtomatis, 60*1000); // cek tiap menit selama aplikasi terbuka
+
+/* ============ PWA: DAFTARKAN SERVICE WORKER ============ */
+if('serviceWorker' in navigator){
+  window.addEventListener('load', ()=>{
+    navigator.serviceWorker.register('sw.js').catch(err=>{
+      console.error('Gagal mendaftarkan service worker', err);
+    });
+  });
+  // Saat versi baru aplikasi sudah aktif menggantikan yang lama, muat ulang otomatis
+  // supaya perubahan langsung terlihat tanpa harus hapus cache manual.
+  let sudahReload = false;
+  navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+    if(sudahReload) return;
+    sudahReload = true;
+    window.location.reload();
+  });
+}
+</script>
+</body>
+</html>
